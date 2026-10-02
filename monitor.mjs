@@ -97,6 +97,7 @@ console.log('Regras de Cores ativas:');
 console.log('  🟢 0% - 40%:  SMART ZONE (Qualidade alta)');
 console.log('  🟡 40% - 60%: ATENÇÃO ! Degrada (Amarelo)');
 console.log('  🔴 > 60%:     DUMB ZONE (Qualidade baixa)');
+console.log('  💰 v1.2.0:    Preço Previsto & Créditos ativos');
 
 // Ciclo contínuo de verificação
 setInterval(runCycle, 4000);

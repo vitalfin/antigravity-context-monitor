@@ -2,7 +2,7 @@
   const WIDGET_ID = 'agy-context-zone-widget';
   const BREADCRUMB_WIDGET_ID = 'agy-breadcrumb-context-widget';
   const MODAL_ID = 'agy-context-inspector-modal';
-  const VERSION = '1.1.0-context-inspector';
+  const VERSION = '1.2.0-cost-credits';
 
   if (window.__agyWidgetVersion === VERSION && (document.getElementById(WIDGET_ID) || document.getElementById(BREADCRUMB_WIDGET_ID))) {
     return;
@@ -59,6 +59,150 @@
       tag: 'SMART ZONE ✓',
       bg: 'rgba(34, 197, 94, 0.18)',
       desc: 'Qualidade alta (respostas precisas)'
+    };
+  }
+
+  // TABELA DE PRECIFICAÇÃO DA API (Google AI Studio / Vertex AI / Claude)
+  const PRICING_TIERS = {
+    'gemini-flash': {
+      id: 'gemini-flash',
+      displayName: 'Gemini 2.0 / 1.5 Flash',
+      provider: 'Google AI Studio',
+      inputPricePerM: 0.10,
+      cachePricePerM: 0.025, // 75% desconto no cache
+      outputPricePerM: 0.40,
+      cacheDiscountPct: 75
+    },
+    'gemini-pro': {
+      id: 'gemini-pro',
+      displayName: 'Gemini 1.5 / 2.5 Pro',
+      provider: 'Google AI Studio',
+      inputPricePerM: 1.25,      // <= 128k
+      inputPricePerMHigh: 2.50,  // > 128k
+      cachePricePerM: 0.3125,    // 75% desconto
+      outputPricePerM: 5.00,
+      cacheDiscountPct: 75
+    },
+    'claude-sonnet': {
+      id: 'claude-sonnet',
+      displayName: 'Claude 3.5 Sonnet',
+      provider: 'Anthropic',
+      inputPricePerM: 3.00,
+      cachePricePerM: 0.30,      // 90% desconto
+      outputPricePerM: 15.00,
+      cacheDiscountPct: 90
+    }
+  };
+
+  function getModelPricing(modelName, totalTokens) {
+    const m = (modelName || '').toLowerCase();
+    const btn = document.querySelector('button[data-testid="model-selector-trigger"]') ||
+                document.querySelector('[data-testid*="model"]');
+    const btnText = (btn?.innerText || '').toLowerCase();
+
+    if (m.includes('claude') || m.includes('sonnet') || btnText.includes('claude') || btnText.includes('sonnet')) {
+      return PRICING_TIERS['claude-sonnet'];
+    }
+
+    if (m.includes('pro') || btnText.includes('pro')) {
+      const isOver128k = (totalTokens || 0) > 128000;
+      const base = PRICING_TIERS['gemini-pro'];
+      return {
+        ...base,
+        displayName: isOver128k ? 'Gemini Pro (>128k)' : 'Gemini Pro (≤128k)',
+        inputPricePerM: isOver128k ? base.inputPricePerMHigh : base.inputPricePerM
+      };
+    }
+
+    // Padrão: Gemini Flash
+    return PRICING_TIERS['gemini-flash'];
+  }
+
+  function calculateCosts(uncachedInputTokens, cachedTokens, outputTokens, pricing) {
+    const pInput = pricing.inputPricePerM;
+    const pCache = pricing.cachePricePerM;
+    const pOutput = pricing.outputPricePerM;
+
+    const costInput = (uncachedInputTokens / 1000000) * pInput;
+    const costCache = (cachedTokens / 1000000) * pCache;
+    const costOutput = (outputTokens / 1000000) * pOutput;
+    const totalCost = costInput + costCache + costOutput;
+
+    // Economia real com o cache de contexto
+    const savedCost = (cachedTokens / 1000000) * (pInput - pCache);
+    const costWithoutCache = totalCost + savedCost;
+
+    return {
+      costInput,
+      costCache,
+      costOutput,
+      totalCost,
+      savedCost,
+      costWithoutCache,
+      pricing
+    };
+  }
+
+  function formatUSD(val) {
+    if (val === undefined || val === null || isNaN(val) || val <= 0) return '$0.0000';
+    if (val < 0.0001) return '< $0.0001';
+    if (val < 0.01) return '$' + val.toFixed(4);
+    if (val < 1) return '$' + val.toFixed(3);
+    return '$' + val.toFixed(2);
+  }
+
+  function formatBRL(valUSD) {
+    if (!valUSD || isNaN(valUSD) || valUSD <= 0) return 'R$ 0,00';
+    const brl = valUSD * 5.65;
+    if (brl < 0.01) return 'R$ ' + brl.toFixed(4).replace('.', ',');
+    return 'R$ ' + brl.toFixed(2).replace('.', ',');
+  }
+
+  function calculateProjections(cacheRatio, currentOutputTokens, pricing) {
+    const ratio = Math.max(0, Math.min(0.99, cacheRatio || 0.75));
+    const output = currentOutputTokens > 0 ? currentOutputTokens : 4000;
+
+    // Smart Zone (250k tokens)
+    const smartTarget = 250000;
+    const smartCached = Math.round(smartTarget * ratio);
+    const smartUncached = smartTarget - smartCached;
+    const smartInputPrice = (pricing.id === 'gemini-pro' && smartTarget > 128000) ? pricing.inputPricePerMHigh : pricing.inputPricePerM;
+    const smartCostCached = (smartCached / 1000000) * pricing.cachePricePerM;
+    const smartCostUncached = (smartUncached / 1000000) * smartInputPrice;
+    const smartCostOutput = (output / 1000000) * pricing.outputPricePerM;
+    const smartTotal = smartCostCached + smartCostUncached + smartCostOutput;
+    const smartWithoutCache = (smartTarget / 1000000) * smartInputPrice + smartCostOutput;
+    const smartSaved = smartWithoutCache - smartTotal;
+
+    // Capacidade Máxima / Dumb Zone (1M tokens)
+    const rawTarget = 1000000;
+    const rawCached = Math.round(rawTarget * ratio);
+    const rawUncached = rawTarget - rawCached;
+    const rawInputPrice = (pricing.id === 'gemini-pro') ? pricing.inputPricePerMHigh : pricing.inputPricePerM;
+    const rawCostCached = (rawCached / 1000000) * pricing.cachePricePerM;
+    const rawCostUncached = (rawUncached / 1000000) * rawInputPrice;
+    const rawCostOutput = (Math.max(output, 6000) / 1000000) * pricing.outputPricePerM;
+    const rawTotal = rawCostCached + rawCostUncached + rawCostOutput;
+    const rawWithoutCache = (rawTarget / 1000000) * rawInputPrice + rawCostOutput;
+    const rawSaved = rawWithoutCache - rawTotal;
+
+    return {
+      smart: {
+        target: smartTarget,
+        cachedTokens: smartCached,
+        uncachedTokens: smartUncached,
+        totalCost: smartTotal,
+        withoutCache: smartWithoutCache,
+        savedCost: smartSaved
+      },
+      raw: {
+        target: rawTarget,
+        cachedTokens: rawCached,
+        uncachedTokens: rawUncached,
+        totalCost: rawTotal,
+        withoutCache: rawWithoutCache,
+        savedCost: rawSaved
+      }
     };
   }
 
@@ -178,6 +322,9 @@
       // Base system prompt tokens (instruções base, regras do repo, schemas MCP)
       const systemTokensEst = firstUsage ? Math.max(5000, Number(firstUsage.inputTokens || 0) - totalUserTokens) : 19000;
 
+      const pricing = getModelPricing(latestUsage?.model, totalTokens);
+      const costs = calculateCosts(inputTokens, cachedTokens, outputTokens, pricing);
+
       const result = {
         cascadeId,
         totalTokens,
@@ -185,6 +332,8 @@
         inputTokens,
         outputTokens,
         cachePct: (cachedTokens + inputTokens) > 0 ? Math.round((cachedTokens / (cachedTokens + inputTokens)) * 100) : 0,
+        pricing,
+        costs,
         breakdown: {
           system: systemTokensEst,
           files: totalFilesTokens,
@@ -252,6 +401,11 @@
           <span>Distribuição de Contexto</span>
           <span id="agy-cache-badge" style="color: #38bdf8; font-weight: 600; text-transform: none;">⚡ Cache: 0%</span>
         </div>
+
+        <div id="agy-cost-popover-badge" style="display: flex; justify-content: space-between; align-items: center; padding: 4px 7px; border-radius: 5px; background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.2); margin-bottom: 6px; font-size: 9.5px;">
+          <span>💰 Custo Est.: <strong id="agy-popover-cost" style="color: #22c55e; font-variant-numeric: tabular-nums;">~$0.0000</strong></span>
+          <span id="agy-popover-saved" style="color: #38bdf8; font-size: 9px; font-variant-numeric: tabular-nums;">Economia: -$0.0000</span>
+        </div>
         
         <div id="agy-breakdown-tags" style="display: flex; flex-wrap: wrap; gap: 4px; font-size: 9.5px; margin-bottom: 6px;">
           <span id="agy-tag-system" style="padding: 2px 5px; border-radius: 3px; background: rgba(168, 85, 247, 0.15); color: #c084fc;">🧠 Sistema: 0</span>
@@ -290,7 +444,7 @@
   modal.style.cssText = 'display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(5px); z-index: 9999999; align-items: center; justify-content: center; font-family: var(--font-sans, system-ui, -apple-system, sans-serif); color: var(--foreground, #f2f2f2); box-sizing: border-box;';
 
   modal.innerHTML = `
-    <div id="agy-modal-card" style="width: 680px; max-width: 92vw; max-height: 85vh; background: var(--card, #18181b); border: 1px solid var(--border, rgba(255, 255, 255, 0.14)); border-radius: 14px; box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7); display: flex; flex-direction: column; overflow: hidden; animation: agyFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);">
+    <div id="agy-modal-card" style="width: 740px; max-width: 94vw; max-height: 85vh; background: var(--card, #18181b); border: 1px solid var(--border, rgba(255, 255, 255, 0.14)); border-radius: 14px; box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7); display: flex; flex-direction: column; overflow: hidden; animation: agyFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);">
       
       <!-- Modal Header -->
       <div style="padding: 14px 18px; border-bottom: 1px solid var(--border, rgba(255,255,255,0.1)); display: flex; justify-content: space-between; align-items: center;">
@@ -304,7 +458,7 @@
       </div>
 
       <!-- Quick Metrics Ribbon -->
-      <div style="padding: 12px 18px; background: color-mix(in srgb, var(--foreground, #fff) 2.5%, transparent); border-bottom: 1px solid var(--border, rgba(255,255,255,0.08)); display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+      <div style="padding: 12px 18px; background: color-mix(in srgb, var(--foreground, #fff) 2.5%, transparent); border-bottom: 1px solid var(--border, rgba(255,255,255,0.08)); display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px;">
         <div style="display: flex; flex-direction: column;">
           <span style="font-size: 10px; color: var(--muted-foreground, #888); text-transform: uppercase; font-weight: 600;">Consumo Ativo</span>
           <span id="agy-m-total" style="font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; margin-top: 1px;">0 tokens</span>
@@ -314,6 +468,11 @@
           <span style="font-size: 10px; color: var(--muted-foreground, #888); text-transform: uppercase; font-weight: 600;">Gemini Cache</span>
           <span id="agy-m-cache" style="font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; color: #38bdf8; margin-top: 1px;">0 tokens</span>
           <span id="agy-m-cache-pct" style="font-size: 10.5px; color: #38bdf8;">0% em cache rápido</span>
+        </div>
+        <div style="display: flex; flex-direction: column;">
+          <span style="font-size: 10px; color: var(--muted-foreground, #888); text-transform: uppercase; font-weight: 600;">Custo Estimado (API)</span>
+          <span id="agy-m-cost" style="font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; color: #22c55e; margin-top: 1px;">~$0.0000</span>
+          <span id="agy-m-cost-sub" style="font-size: 10.5px; color: #38bdf8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Economia de 75% via Cache (-$0.000)</span>
         </div>
         <div style="display: flex; flex-direction: column;">
           <span style="font-size: 10px; color: var(--muted-foreground, #888); text-transform: uppercase; font-weight: 600;">Arquivos em Contexto</span>
@@ -350,6 +509,7 @@
       <!-- Navigation Tabs -->
       <div style="display: flex; padding: 0 18px; border-bottom: 1px solid var(--border, rgba(255,255,255,0.1)); background: color-mix(in srgb, var(--foreground, #fff) 1.5%, transparent); gap: 16px;">
         <button id="agy-tab-btn-overview" type="button" class="agy-tab-btn" data-tab="overview" style="background: transparent; border: none; border-bottom: 2px solid #22c55e; color: #22c55e; font-size: 11.5px; font-weight: 600; padding: 8px 2px; cursor: pointer;">Visão Geral</button>
+        <button id="agy-tab-btn-costs" type="button" class="agy-tab-btn" data-tab="costs" style="background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--muted-foreground, #999); font-size: 11.5px; font-weight: 600; padding: 8px 2px; cursor: pointer;">💳 Custos & Créditos</button>
         <button id="agy-tab-btn-files" type="button" class="agy-tab-btn" data-tab="files" style="background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--muted-foreground, #999); font-size: 11.5px; font-weight: 600; padding: 8px 2px; cursor: pointer;">Arquivos (<span id="agy-tab-count-files">0</span>)</button>
         <button id="agy-tab-btn-commands" type="button" class="agy-tab-btn" data-tab="commands" style="background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--muted-foreground, #999); font-size: 11.5px; font-weight: 600; padding: 8px 2px; cursor: pointer;">Comandos (<span id="agy-tab-count-commands">0</span>)</button>
         <button id="agy-tab-btn-subagents" type="button" class="agy-tab-btn" data-tab="subagents" style="background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--muted-foreground, #999); font-size: 11.5px; font-weight: 600; padding: 8px 2px; cursor: pointer;">Subagentes (<span id="agy-tab-count-subagents">0</span>)</button>
@@ -462,6 +622,147 @@
             <div>
               <div style="font-weight: 600; color: #38bdf8; font-size: 11.5px;">⚡ Gemini Context Caching Ativo (${data.cachePct}%)</div>
               <div style="font-size: 10.5px; color: var(--muted-foreground, #bbb); margin-top: 2px;">${formatTokens(data.cachedTokens)} dos tokens desta sessão foram servidos pelo cache prefixado do Google, garantindo respostas rápidas e sem custo redundante de reprocessamento.</div>
+            </div>
+          </div>
+
+        </div>
+      `;
+    } else if (tab === 'costs') {
+      const pricing = data.pricing || getModelPricing(data.latestUsage?.model, data.totalTokens);
+      const costs = data.costs || calculateCosts(data.inputTokens, data.cachedTokens, data.outputTokens, pricing);
+      const projections = calculateProjections(data.cachePct / 100, data.outputTokens, pricing);
+
+      container.innerHTML = `
+        <div style="display: flex; flex-direction: column; gap: 12px; line-height: 1.45;">
+          
+          <!-- Nota Explicativa -->
+          <div style="padding: 10px 14px; background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.22); border-radius: 8px; display: flex; gap: 10px; align-items: flex-start;">
+            <span style="font-size: 17px; line-height: 1.2;">ℹ️</span>
+            <div style="font-size: 11px; color: var(--foreground, #ddd);">
+              <span style="font-weight: 700; color: #60a5fa;">Plano Google AI Pro</span> (cota de assinatura sem custo avulso).
+              <div style="color: var(--muted-foreground, #bbb); margin-top: 2px;">
+                Você está utilizando o plano Google AI Pro (cota de assinatura sem custo avulso). Estes valores mostram quanto esta sessão consumiria se cobrada diretamente via API/Créditos (Google AI Studio / Vertex AI).
+              </div>
+            </div>
+          </div>
+
+          <!-- Card do Modelo e Resumo de Custo -->
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border, rgba(255,255,255,0.08)); border-radius: 8px; padding: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border, rgba(255,255,255,0.08));">
+              <div>
+                <span style="font-size: 10px; text-transform: uppercase; font-weight: 600; color: var(--muted-foreground, #888); letter-spacing: 0.03em;">Modelo & Tarifário Ativo</span>
+                <div style="font-size: 13.5px; font-weight: 700; color: var(--foreground, #fff); margin-top: 2px; display: flex; align-items: center; gap: 6px;">
+                  <span>🤖 ${pricing.displayName}</span>
+                  <span style="font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.08); color: var(--muted-foreground, #bbb);">${pricing.provider}</span>
+                </div>
+              </div>
+              <div style="text-align: right;">
+                <span style="font-size: 10px; text-transform: uppercase; font-weight: 600; color: var(--muted-foreground, #888); letter-spacing: 0.03em;">Custo desta Janela</span>
+                <div style="font-size: 17px; font-weight: 800; color: #22c55e; font-variant-numeric: tabular-nums; margin-top: 1px;">
+                  ~${formatUSD(costs.totalCost)} <span style="font-size: 11px; font-weight: 600; color: var(--muted-foreground, #aaa);">(${formatBRL(costs.totalCost)})</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tabela de Decomposição de Custos -->
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <div style="display: grid; grid-template-columns: 2fr 110px 120px 120px; padding: 6px 8px; font-weight: 600; font-size: 10px; color: var(--muted-foreground, #888); border-bottom: 1px solid var(--border, rgba(255,255,255,0.1));">
+                <span>CATEGORIA DE TOKEN</span>
+                <span style="text-align: right;">QUANTIDADE</span>
+                <span style="text-align: right;">TAXA / 1M TOKENS</span>
+                <span style="text-align: right;">SUBTOTAL ESTIMADO</span>
+              </div>
+
+              <!-- Uncached Input -->
+              <div class="agy-table-row" style="display: grid; grid-template-columns: 2fr 110px 120px 120px; padding: 7px 8px; border-radius: 6px; font-size: 11px; align-items: center; transition: background 0.1s;">
+                <div>
+                  <span style="font-weight: 600; color: var(--foreground, #fff);">Tokens Uncached (Entrada fresca)</span>
+                  <div style="font-size: 9.5px; color: var(--muted-foreground, #888);">Novos prompts, regras e arquivos lidos</div>
+                </div>
+                <span style="text-align: right; font-variant-numeric: tabular-nums; color: var(--foreground, #ddd);">${formatTokens(data.inputTokens)}</span>
+                <span style="text-align: right; font-variant-numeric: tabular-nums; color: var(--muted-foreground, #aaa);">$${pricing.inputPricePerM.toFixed(2)}</span>
+                <span style="text-align: right; font-weight: 600; color: var(--foreground, #fff); font-variant-numeric: tabular-nums;">${formatUSD(costs.costInput)}</span>
+              </div>
+
+              <!-- Cached Read -->
+              <div class="agy-table-row" style="display: grid; grid-template-columns: 2fr 110px 120px 120px; padding: 7px 8px; border-radius: 6px; font-size: 11px; align-items: center; background: rgba(56, 189, 248, 0.05); transition: background 0.1s;">
+                <div>
+                  <span style="font-weight: 600; color: #38bdf8;">Tokens em Cache (Reaproveitados)</span>
+                  <div style="font-size: 9.5px; color: #38bdf8; opacity: 0.85;">Reaproveitados com ${pricing.cacheDiscountPct}% de desconto</div>
+                </div>
+                <span style="text-align: right; font-variant-numeric: tabular-nums; color: #38bdf8; font-weight: 600;">${formatTokens(data.cachedTokens)}</span>
+                <span style="text-align: right; font-variant-numeric: tabular-nums; color: #38bdf8;">$${pricing.cachePricePerM.toFixed(4)}</span>
+                <span style="text-align: right; font-weight: 600; color: #38bdf8; font-variant-numeric: tabular-nums;">${formatUSD(costs.costCache)}</span>
+              </div>
+
+              <!-- Output -->
+              <div class="agy-table-row" style="display: grid; grid-template-columns: 2fr 110px 120px 120px; padding: 7px 8px; border-radius: 6px; font-size: 11px; align-items: center; transition: background 0.1s;">
+                <div>
+                  <span style="font-weight: 600; color: #c084fc;">Tokens de Saída (Respostas geradas)</span>
+                  <div style="font-size: 9.5px; color: var(--muted-foreground, #888);">Respostas do assistente e cadeias de pensamento</div>
+                </div>
+                <span style="text-align: right; font-variant-numeric: tabular-nums; color: var(--foreground, #ddd);">${formatTokens(data.outputTokens)}</span>
+                <span style="text-align: right; font-variant-numeric: tabular-nums; color: var(--muted-foreground, #aaa);">$${pricing.outputPricePerM.toFixed(2)}</span>
+                <span style="text-align: right; font-weight: 600; color: var(--foreground, #fff); font-variant-numeric: tabular-nums;">${formatUSD(costs.costOutput)}</span>
+              </div>
+            </div>
+
+            <!-- Balanço de Economia Real -->
+            <div style="margin-top: 12px; padding: 10px 14px; background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.28); border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <div style="font-weight: 700; color: #22c55e; font-size: 12px; display: flex; align-items: center; gap: 6px;">
+                  <span>🎉 Economia Real Gerada pelo Cache:</span>
+                  <span style="font-size: 13.5px; font-weight: 800;">-${formatUSD(costs.savedCost)}</span>
+                  <span style="font-size: 11px; opacity: 0.9;">(${formatBRL(costs.savedCost)})</span>
+                </div>
+                <div style="font-size: 10px; color: var(--muted-foreground, #aaa); margin-top: 2px;">
+                  Sem o cache de contexto, o custo seria de <strong>${formatUSD(costs.costWithoutCache)}</strong> (${formatBRL(costs.costWithoutCache)}) vs <strong>${formatUSD(costs.totalCost)}</strong> efetivos.
+                </div>
+              </div>
+              <div style="background: rgba(34, 197, 94, 0.22); color: #22c55e; font-weight: 700; font-size: 11px; padding: 4px 10px; border-radius: 6px; white-space: nowrap;">
+                -${pricing.cacheDiscountPct}% no Cache
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Projeção de Escala de Contexto -->
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border, rgba(255,255,255,0.08)); border-radius: 8px; padding: 12px;">
+            <div style="font-weight: 600; font-size: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+              <span>📈 Projeção de Custos por Patamar de Contexto</span>
+              <span style="color: var(--muted-foreground, #999); font-size: 10.5px;">Base: ${data.cachePct}% em cache</span>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              
+              <!-- Projeção 250k (Smart Zone) -->
+              <div style="padding: 10px 12px; background: rgba(34, 197, 94, 0.05); border: 1px solid rgba(34, 197, 94, 0.18); border-radius: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                  <span style="font-weight: 700; color: #22c55e; font-size: 11.5px;">Smart Zone (250k tokens)</span>
+                  <span style="font-size: 9.5px; font-weight: 700; padding: 1px 6px; border-radius: 3px; background: rgba(34, 197, 94, 0.2); color: #22c55e;">Qualidade Alta</span>
+                </div>
+                <div style="font-size: 15px; font-weight: 800; color: var(--foreground, #fff); font-variant-numeric: tabular-nums; margin: 4px 0;">
+                  ~${formatUSD(projections.smart.totalCost)} <span style="font-size: 11px; font-weight: normal; color: var(--muted-foreground, #aaa);">(${formatBRL(projections.smart.totalCost)})</span>
+                </div>
+                <div style="font-size: 10px; color: var(--muted-foreground, #aaa); line-height: 1.35;">
+                  Sem cache: ${formatUSD(projections.smart.withoutCache)} | <span style="color: #22c55e; font-weight: 600;">Economia: -${formatUSD(projections.smart.savedCost)}</span>
+                </div>
+              </div>
+
+              <!-- Projeção 1M (Raw Limit) -->
+              <div style="padding: 10px 12px; background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.18); border-radius: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                  <span style="font-weight: 700; color: #ef4444; font-size: 11.5px;">Capacidade Máxima (1.0M tokens)</span>
+                  <span style="font-size: 9.5px; font-weight: 700; padding: 1px 6px; border-radius: 3px; background: rgba(239, 68, 68, 0.2); color: #ef4444;">Dumb Zone</span>
+                </div>
+                <div style="font-size: 15px; font-weight: 800; color: var(--foreground, #fff); font-variant-numeric: tabular-nums; margin: 4px 0;">
+                  ~${formatUSD(projections.raw.totalCost)} <span style="font-size: 11px; font-weight: normal; color: var(--muted-foreground, #aaa);">(${formatBRL(projections.raw.totalCost)})</span>
+                </div>
+                <div style="font-size: 10px; color: var(--muted-foreground, #aaa); line-height: 1.35;">
+                  Sem cache: ${formatUSD(projections.raw.withoutCache)} | <span style="color: #22c55e; font-weight: 600;">Economia: -${formatUSD(projections.raw.savedCost)}</span>
+                </div>
+              </div>
+
             </div>
           </div>
 
@@ -690,6 +991,11 @@
     const cacheBadge = document.getElementById('agy-cache-badge');
     if (cacheBadge) cacheBadge.innerText = '⚡ Cache: 0%';
 
+    const popCost = document.getElementById('agy-popover-cost');
+    if (popCost) popCost.innerText = '~$0.0000';
+    const popSaved = document.getElementById('agy-popover-saved');
+    if (popSaved) popSaved.innerText = 'Economia: -$0.0000';
+
     const tagSys = document.getElementById('agy-tag-system');
     if (tagSys) tagSys.innerText = '🧠 Sistema: 0';
     const tagFiles = document.getElementById('agy-tag-files');
@@ -703,6 +1009,12 @@
     // Subagentes
     const sectionEl = document.getElementById('agy-subagents-section');
     if (sectionEl) sectionEl.style.display = 'none';
+
+    // Modal ribbon resets
+    const mCost = document.getElementById('agy-m-cost');
+    if (mCost) mCost.innerText = '~$0.0000';
+    const mCostSub = document.getElementById('agy-m-cost-sub');
+    if (mCostSub) mCostSub.innerText = 'Economia de 75% via Cache (-$0.000)';
 
     // Remove badges órfãs de subagentes anteriores
     document.querySelectorAll('.agy-subagent-badge').forEach(b => b.remove());
@@ -831,6 +1143,16 @@
       cacheBadge.title = `${formatTokens(details.cachedTokens)} tokens em cache rápido`;
     }
 
+    const costs = details.costs || calculateCosts(details.inputTokens, details.cachedTokens, details.outputTokens, details.pricing || getModelPricing(details.latestUsage?.model, totalTokens));
+
+    const popCost = document.getElementById('agy-popover-cost');
+    if (popCost) popCost.innerText = `~${formatUSD(costs.totalCost)}`;
+    const popSaved = document.getElementById('agy-popover-saved');
+    if (popSaved) {
+      popSaved.innerText = `Economia: -${formatUSD(costs.savedCost)}`;
+      popSaved.title = `Economia real via cache: ${formatUSD(costs.savedCost)} (${formatBRL(costs.savedCost)})`;
+    }
+
     const tagSys = document.getElementById('agy-tag-system');
     if (tagSys) tagSys.innerText = `🧠 Sistema: ~${formatTokens(details.breakdown.system)}`;
     const tagFiles = document.getElementById('agy-tag-files');
@@ -887,6 +1209,14 @@
 
       document.getElementById('agy-m-cache').innerText = `${formatTokens(details.cachedTokens)}`;
       document.getElementById('agy-m-cache-pct').innerText = `${details.cachePct}% em cache rápido`;
+
+      const mCost = document.getElementById('agy-m-cost');
+      if (mCost) mCost.innerText = `~${formatUSD(costs.totalCost)}`;
+      const mCostSub = document.getElementById('agy-m-cost-sub');
+      if (mCostSub) {
+        mCostSub.innerText = `Economia de ${costs.pricing.cacheDiscountPct}% via Cache (-${formatUSD(costs.savedCost)})`;
+        mCostSub.title = `Economia real calculada: ${formatUSD(costs.savedCost)} (${formatBRL(costs.savedCost)})`;
+      }
 
       document.getElementById('agy-m-files').innerText = `${details.filesCount} arquivos`;
       document.getElementById('agy-m-files-tokens').innerText = `~${formatTokens(details.breakdown.files)} tokens`;
