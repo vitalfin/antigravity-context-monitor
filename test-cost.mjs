@@ -102,7 +102,7 @@ console.log('  ✓ Teste 4 passou: Formatação USD com alta precisão.');
 
 // Teste 5: Verificação de sintaxe de widget.js e monitor.mjs
 const widgetSrc = fs.readFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), 'widget.js'), 'utf8');
-assert(widgetSrc.includes("VERSION = '1.2.0-cost-credits'"), 'widget.js deve ter VERSION = 1.2.0-cost-credits');
+assert(widgetSrc.includes("VERSION = '1.3.0-portal-subagent-inspector'"), 'widget.js deve ter VERSION = 1.3.0-portal-subagent-inspector');
 assert(widgetSrc.includes("agy-popover-cost"), 'widget.js deve conter agy-popover-cost');
 assert(widgetSrc.includes("agy-m-cost"), 'widget.js deve conter agy-m-cost');
 assert(widgetSrc.includes("agy-tab-btn-costs"), 'widget.js deve conter agy-tab-btn-costs');

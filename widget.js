@@ -2,14 +2,15 @@
   const WIDGET_ID = 'agy-context-zone-widget';
   const BREADCRUMB_WIDGET_ID = 'agy-breadcrumb-context-widget';
   const MODAL_ID = 'agy-context-inspector-modal';
-  const VERSION = '1.2.2-gemini-38-flash';
+  const POPOVER_ID = 'agy-zone-popover';
+  const VERSION = '1.3.0-portal-subagent-inspector';
 
   if (window.__agyWidgetVersion === VERSION && (document.getElementById(WIDGET_ID) || document.getElementById(BREADCRUMB_WIDGET_ID))) {
     return;
   }
 
-  // Limpeza de instâncias antigas
-  document.querySelectorAll('#' + WIDGET_ID + ', #' + BREADCRUMB_WIDGET_ID + ', #' + MODAL_ID).forEach(el => el.remove());
+  // Limpeza completa de instâncias antigas
+  document.querySelectorAll('#' + WIDGET_ID + ', #' + BREADCRUMB_WIDGET_ID + ', #' + MODAL_ID + ', #' + POPOVER_ID).forEach(el => el.remove());
   document.querySelectorAll('.agy-subagent-badge').forEach(el => el.remove());
   if (window.__agyWidgetInterval) clearInterval(window.__agyWidgetInterval);
 
@@ -250,9 +251,15 @@
     };
   }
 
-  // Estado global do contexto atual
+  // Estado global do contexto
   let currentContextData = null;
   let activeTab = 'overview';
+  let latestSubagentsList = [];
+  let activeModalData = null;
+  let activeModalScope = 'Conversa Principal';
+  let currentPopoverData = null;
+  let currentPopoverScope = 'CONTEXT WINDOW';
+  let hideTimer = null;
 
   // Cache de contexto por cascadeId
   const contextCache = new Map();
@@ -363,7 +370,7 @@
       const inputTokens = latestUsage ? Number(latestUsage.inputTokens || 0) : 0;
       const outputTokens = latestUsage ? Number(latestUsage.outputTokens || 0) : 0;
 
-      // Base system prompt tokens (instruções base, regras do repo, schemas MCP)
+      // Base system prompt tokens
       const systemTokensEst = firstUsage ? Math.max(5000, Number(firstUsage.inputTokens || 0) - totalUserTokens) : 19000;
 
       const pricing = getModelPricing(latestUsage?.model, totalTokens);
@@ -398,11 +405,10 @@
     }
   }
 
-  // 1. CRIAR WIDGET PRINCIPAL
+  // 1. CRIAR WIDGET PRINCIPAL (RODAPÉ / INPUT BAR)
   const widget = document.createElement('div');
   widget.id = WIDGET_ID;
   widget.style.cssText = 'display: inline-flex; align-items: center; justify-content: center; height: 28px; width: 28px; border-radius: 8px; cursor: pointer; user-select: none; position: relative; margin-left: 6px; vertical-align: middle; transition: background-color 0.15s ease; flex-shrink: 0;';
-
   widget.innerHTML = `
     <div id="agy-badge" style="display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; position: relative;">
       <svg viewBox="0 0 32 32" style="width: 17px; height: 17px; transform: rotate(-90deg); display: block;">
@@ -410,95 +416,328 @@
         <circle id="agy-zone-ring" cx="16" cy="16" r="13" fill="transparent" stroke="#22c55e" stroke-width="3.8" stroke-linecap="round" stroke-dasharray="${CIRCLE_C}" stroke-dashoffset="${CIRCLE_C}" style="transition: stroke-dashoffset 0.35s ease, stroke 0.3s ease;" />
       </svg>
     </div>
+  `;
 
-    <!-- POPOVER HOVER -->
-    <div id="agy-zone-popover" style="display: none; position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%); width: 280px; background: var(--card, #1c1c1f); color: var(--foreground, #f2f2f2); border: 1px solid var(--border, rgba(255, 255, 255, 0.12)); border-radius: 10px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3); padding: 12px; z-index: 999999; font-family: var(--font-sans, system-ui, -apple-system, sans-serif); pointer-events: auto; box-sizing: border-box; font-size: 11.5px; line-height: 1.4;">
-      
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-        <span id="agy-scope-title" style="font-weight: 600; font-size: 11px; opacity: 0.85; letter-spacing: 0.03em;">CONTEXT WINDOW</span>
-        <span id="agy-zone-tag" style="font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: rgba(34, 197, 94, 0.18); color: #22c55e; letter-spacing: 0.02em;">
-          SMART ZONE ✓
-        </span>
-      </div>
-
-      <div style="height: 5px; width: 100%; background: color-mix(in srgb, var(--foreground, #fff) 10%, transparent); border-radius: 9999px; overflow: hidden; margin-bottom: 8px; position: relative;">
-        <div id="agy-zone-bar" style="width: 0%; height: 100%; background: #22c55e; border-radius: 9999px; transition: width 0.35s ease, background 0.3s ease;"></div>
-      </div>
-
-      <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 3px;">
-        <span style="font-size: 11px; color: var(--muted-foreground, #999);">Uso Operacional:</span>
-        <span id="agy-zone-used" style="font-weight: 600; font-size: 12px; font-variant-numeric: tabular-nums;">0 / 250k (0%)</span>
-      </div>
-
-      <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; font-size: 10px; color: var(--muted-foreground, #888);">
-        <span>Capacidade Bruta:</span>
-        <span id="agy-zone-raw" style="font-variant-numeric: tabular-nums;">0 / 1.0M (0%)</span>
-      </div>
-
-      <div id="agy-zone-desc" style="font-size: 10px; padding: 4px 6px; border-radius: 4px; background: color-mix(in srgb, var(--foreground, #fff) 5%, transparent); color: #22c55e; text-align: center; font-weight: 500; margin-bottom: 8px;">
-        Qualidade alta (respostas precisas)
-      </div>
-
-      <!-- COMPOSIÇÃO RESUMIDA DO CONTEXTO -->
-      <div id="agy-composition-section" style="padding-top: 6px; border-top: 1px solid var(--border, rgba(255,255,255,0.1)); margin-bottom: 6px;">
-        <div style="font-size: 10px; font-weight: 600; color: var(--muted-foreground, #999); text-transform: uppercase; margin-bottom: 5px; display: flex; justify-content: space-between;">
-          <span>Distribuição de Contexto</span>
-          <span id="agy-cache-badge" style="color: #38bdf8; font-weight: 600; text-transform: none;">⚡ Cache: 0%</span>
-        </div>
-
-        <div id="agy-cost-popover-badge" style="display: flex; justify-content: space-between; align-items: center; padding: 4px 7px; border-radius: 5px; background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.2); margin-bottom: 6px; font-size: 9.5px;">
-          <span>💰 Custo Est.: <strong id="agy-popover-cost" style="color: #22c55e; font-variant-numeric: tabular-nums;">~$0.0000</strong></span>
-          <span id="agy-popover-saved" style="color: #38bdf8; font-size: 9px; font-variant-numeric: tabular-nums;">Economia: -$0.0000</span>
-        </div>
-        
-        <div id="agy-breakdown-tags" style="display: flex; flex-wrap: wrap; gap: 4px; font-size: 9.5px; margin-bottom: 6px;">
-          <span id="agy-tag-system" style="padding: 2px 5px; border-radius: 3px; background: rgba(168, 85, 247, 0.15); color: #c084fc;">🧠 Sistema: 0</span>
-          <span id="agy-tag-files" style="padding: 2px 5px; border-radius: 3px; background: rgba(59, 130, 246, 0.15); color: #60a5fa;">📄 Arquivos: 0</span>
-          <span id="agy-tag-cmds" style="padding: 2px 5px; border-radius: 3px; background: rgba(249, 115, 22, 0.15); color: #fb923c;">💻 Saídas: 0</span>
-        </div>
-
-        <!-- Top consumidores preview -->
-        <div id="agy-top-consumers" style="font-size: 10px; color: var(--muted-foreground, #aaa); display: flex; flex-direction: column; gap: 2px;"></div>
-      </div>
-
-      <!-- SEÇÃO DINÂMICA DE SUBAGENTES -->
-      <div id="agy-subagents-section" style="display: none; padding-top: 6px; border-top: 1px solid var(--border, rgba(255,255,255,0.1)); margin-bottom: 6px;">
-        <div style="font-size: 10px; font-weight: 600; color: var(--muted-foreground, #999); text-transform: uppercase; margin-bottom: 4px; display: flex; justify-content: space-between;">
-          <span>Subagentes</span>
-          <span id="agy-subagents-count" style="font-weight: 700;">0</span>
-        </div>
-        <div id="agy-subagents-list" style="display: flex; flex-direction: column; gap: 3px; font-size: 10.5px;"></div>
-      </div>
-
-      <!-- BOTÃO INSPECIONAR CONTEXTO COMPLETO -->
-      <div style="padding-top: 6px; border-top: 1px solid var(--border, rgba(255,255,255,0.1));">
-        <button id="agy-btn-inspect" type="button" style="width: 100%; border: 1px solid var(--border, rgba(255,255,255,0.15)); background: var(--secondary, rgba(255,255,255,0.06)); color: var(--foreground, #f2f2f2); border-radius: 6px; padding: 5px 8px; font-size: 10.5px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; transition: background 0.15s ease;">
-          <span>🔍 Inspecionar Contexto Completo</span>
-        </button>
-      </div>
-
-      <!-- Ponta da seta -->
-      <div style="position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%) rotate(45deg); width: 8px; height: 8px; background: var(--card, #1c1c1f); border-right: 1px solid var(--border, rgba(255, 255, 255, 0.12)); border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.12));"></div>
+  // 2. CRIAR BREADCRUMB WIDGET (TOPO / CABEÇALHO)
+  const breadcrumbWidget = document.createElement('div');
+  breadcrumbWidget.id = BREADCRUMB_WIDGET_ID;
+  breadcrumbWidget.style.cssText = 'display: inline-flex; align-items: center; justify-content: center; height: 22px; width: 22px; border-radius: 6px; cursor: pointer; user-select: none; position: relative; margin-left: 6px; vertical-align: middle; transition: background-color 0.15s ease; flex-shrink: 0;';
+  breadcrumbWidget.innerHTML = `
+    <div id="agy-breadcrumb-badge" style="display: flex; align-items: center; justify-content: center; width: 18px; height: 18px; position: relative;">
+      <svg viewBox="0 0 32 32" style="width: 15px; height: 15px; transform: rotate(-90deg); display: block;">
+        <circle cx="16" cy="16" r="13" fill="transparent" stroke="color-mix(in srgb, var(--foreground, #fff) 12%, transparent)" stroke-width="3.2" />
+        <circle id="agy-breadcrumb-ring" cx="16" cy="16" r="13" fill="transparent" stroke="#22c55e" stroke-width="3.8" stroke-linecap="round" stroke-dasharray="${CIRCLE_C}" stroke-dashoffset="${CIRCLE_C}" style="transition: stroke-dashoffset 0.35s ease, stroke 0.3s ease;" />
+      </svg>
     </div>
   `;
 
-  // 2. MODAL DE INSPEÇÃO DETALHADA DO CONTEXTO (ESTILO VSCODE / CODEX)
+  // 3. SINGLETON POPOVER PORTADO DIRETAMENTE PARA O BODY (NÃO CORTADO POR OVERFLOW)
+  const popover = document.createElement('div');
+  popover.id = POPOVER_ID;
+  popover.style.cssText = 'display: none; position: fixed; width: 300px; background: var(--card, #1c1c1f); color: var(--foreground, #f2f2f2); border: 1px solid var(--border, rgba(255, 255, 255, 0.12)); border-radius: 10px; box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6), 0 3px 10px rgba(0, 0, 0, 0.4); padding: 12px; z-index: 99999999; font-family: var(--font-sans, system-ui, -apple-system, sans-serif); pointer-events: auto; box-sizing: border-box; font-size: 11.5px; line-height: 1.4;';
+
+  popover.innerHTML = `
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+      <span id="agy-scope-title" style="font-weight: 600; font-size: 11px; opacity: 0.85; letter-spacing: 0.03em; max-width: 175px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">CONTEXT WINDOW</span>
+      <span id="agy-zone-tag" style="font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: rgba(34, 197, 94, 0.18); color: #22c55e; letter-spacing: 0.02em;">
+        SMART ZONE ✓
+      </span>
+    </div>
+
+    <div style="height: 5px; width: 100%; background: color-mix(in srgb, var(--foreground, #fff) 10%, transparent); border-radius: 9999px; overflow: hidden; margin-bottom: 8px; position: relative;">
+      <div id="agy-zone-bar" style="width: 0%; height: 100%; background: #22c55e; border-radius: 9999px; transition: width 0.35s ease, background 0.3s ease;"></div>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 3px;">
+      <span style="font-size: 11px; color: var(--muted-foreground, #999);">Uso Operacional:</span>
+      <span id="agy-zone-used" style="font-weight: 600; font-size: 12px; font-variant-numeric: tabular-nums;">0 / 250k (0%)</span>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; font-size: 10px; color: var(--muted-foreground, #888);">
+      <span>Capacidade Bruta:</span>
+      <span id="agy-zone-raw" style="font-variant-numeric: tabular-nums;">0 / 1.0M (0%)</span>
+    </div>
+
+    <div id="agy-zone-desc" style="font-size: 10px; padding: 4px 6px; border-radius: 4px; background: color-mix(in srgb, var(--foreground, #fff) 5%, transparent); color: #22c55e; text-align: center; font-weight: 500; margin-bottom: 8px;">
+      Qualidade alta (respostas precisas)
+    </div>
+
+    <!-- COMPOSIÇÃO RESUMIDA DO CONTEXTO -->
+    <div id="agy-composition-section" style="padding-top: 6px; border-top: 1px solid var(--border, rgba(255,255,255,0.1)); margin-bottom: 6px;">
+      <div style="font-size: 10px; font-weight: 600; color: var(--muted-foreground, #999); text-transform: uppercase; margin-bottom: 5px; display: flex; justify-content: space-between;">
+        <span>Distribuição de Contexto</span>
+        <span id="agy-cache-badge" style="color: #38bdf8; font-weight: 600; text-transform: none;">⚡ Cache: 0%</span>
+      </div>
+
+      <div id="agy-cost-popover-badge" style="display: flex; justify-content: space-between; align-items: center; padding: 4px 7px; border-radius: 5px; background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.2); margin-bottom: 6px; font-size: 9.5px;">
+        <span>💰 Custo Est.: <strong id="agy-popover-cost" style="color: #22c55e; font-variant-numeric: tabular-nums;">~$0.0000</strong></span>
+        <span id="agy-popover-saved" style="color: #38bdf8; font-size: 9px; font-variant-numeric: tabular-nums;">Economia: -$0.0000</span>
+      </div>
+      
+      <div id="agy-breakdown-tags" style="display: flex; flex-wrap: wrap; gap: 4px; font-size: 9.5px; margin-bottom: 6px;">
+        <span id="agy-tag-system" style="padding: 2px 5px; border-radius: 3px; background: rgba(168, 85, 247, 0.15); color: #c084fc;">🧠 Sistema: 0</span>
+        <span id="agy-tag-files" style="padding: 2px 5px; border-radius: 3px; background: rgba(59, 130, 246, 0.15); color: #60a5fa;">📄 Arquivos: 0</span>
+        <span id="agy-tag-cmds" style="padding: 2px 5px; border-radius: 3px; background: rgba(249, 115, 22, 0.15); color: #fb923c;">💻 Saídas: 0</span>
+      </div>
+
+      <!-- Top consumidores preview -->
+      <div id="agy-top-consumers" style="font-size: 10px; color: var(--muted-foreground, #aaa); display: flex; flex-direction: column; gap: 2px;"></div>
+    </div>
+
+    <!-- SEÇÃO DINÂMICA DE SUBAGENTES (para a conversa principal) -->
+    <div id="agy-subagents-section" style="display: none; padding-top: 6px; border-top: 1px solid var(--border, rgba(255,255,255,0.1)); margin-bottom: 6px;">
+      <div style="font-size: 10px; font-weight: 600; color: var(--muted-foreground, #999); text-transform: uppercase; margin-bottom: 4px; display: flex; justify-content: space-between;">
+        <span>Subagentes</span>
+        <span id="agy-subagents-count" style="font-weight: 700;">0</span>
+      </div>
+      <div id="agy-subagents-list" style="display: flex; flex-direction: column; gap: 3px; font-size: 10.5px;"></div>
+    </div>
+
+    <!-- BOTÃO INSPECIONAR CONTEXTO COMPLETO -->
+    <div style="padding-top: 6px; border-top: 1px solid var(--border, rgba(255,255,255,0.1));">
+      <button id="agy-btn-inspect" type="button" style="width: 100%; border: 1px solid var(--border, rgba(255,255,255,0.15)); background: var(--secondary, rgba(255,255,255,0.06)); color: var(--foreground, #f2f2f2); border-radius: 6px; padding: 5px 8px; font-size: 10.5px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; transition: background 0.15s ease;">
+        <span>🔍 Inspecionar Contexto Completo</span>
+      </button>
+    </div>
+
+    <!-- Seta do Popover com Posicionamento Dinâmico -->
+    <div id="agy-popover-arrow" style="position: absolute; width: 8px; height: 8px; background: var(--card, #1c1c1f); pointer-events: none;"></div>
+  `;
+
+  document.body.appendChild(popover);
+
+  // 4. POSICIONAMENTO DINÂMICO E CLAMPEAMENTO DO POPOVER (ANTI-CLIPPING)
+  function positionPopover(targetEl) {
+    const rect = targetEl.getBoundingClientRect();
+    const popWidth = 300;
+
+    // Clampeamento horizontal: nunca vaza pelas bordas da janela
+    let left = rect.left + rect.width / 2 - popWidth / 2;
+    left = Math.max(16, Math.min(window.innerWidth - popWidth - 16, left));
+    popover.style.left = left + 'px';
+
+    const arrow = popover.querySelector('#agy-popover-arrow');
+    const arrowLeft = (rect.left + rect.width / 2) - left;
+    const clampedArrowLeft = Math.max(14, Math.min(popWidth - 14, arrowLeft));
+
+    // Posicionamento vertical: calcula espaço disponível
+    const spaceAbove = rect.top;
+    const spaceBelow = window.innerHeight - rect.bottom;
+
+    if (spaceAbove < 340 && spaceBelow >= 250) {
+      // Abre ABAIXO do alvo
+      popover.style.top = (rect.bottom + 8) + 'px';
+      popover.style.bottom = 'auto';
+      if (arrow) {
+        arrow.style.top = '-5px';
+        arrow.style.bottom = 'auto';
+        arrow.style.left = clampedArrowLeft + 'px';
+        arrow.style.transform = 'translateX(-50%) rotate(45deg)';
+        arrow.style.borderLeft = '1px solid var(--border, rgba(255, 255, 255, 0.12))';
+        arrow.style.borderTop = '1px solid var(--border, rgba(255, 255, 255, 0.12))';
+        arrow.style.borderRight = 'none';
+        arrow.style.borderBottom = 'none';
+      }
+    } else {
+      // Abre ACIMA do alvo
+      popover.style.bottom = (window.innerHeight - rect.top + 8) + 'px';
+      popover.style.top = 'auto';
+      if (arrow) {
+        arrow.style.bottom = '-5px';
+        arrow.style.top = 'auto';
+        arrow.style.left = clampedArrowLeft + 'px';
+        arrow.style.transform = 'translateX(-50%) rotate(45deg)';
+        arrow.style.borderRight = '1px solid var(--border, rgba(255, 255, 255, 0.12))';
+        arrow.style.borderBottom = '1px solid var(--border, rgba(255, 255, 255, 0.12))';
+        arrow.style.borderLeft = 'none';
+        arrow.style.borderTop = 'none';
+      }
+    }
+  }
+
+  function populatePopoverData(data, scopeTitle, isSubagent = false) {
+    currentPopoverData = data;
+    currentPopoverScope = scopeTitle;
+
+    const scopeEl = document.getElementById('agy-scope-title');
+    if (scopeEl) {
+      scopeEl.innerText = scopeTitle || (isSubagent ? 'SUBAGENTE CONTEXT' : 'CONTEXT WINDOW');
+    }
+
+    if (!data || data.totalTokens === 0) {
+      const tagEl = document.getElementById('agy-zone-tag');
+      if (tagEl) {
+        tagEl.innerText = 'SMART ZONE ✓';
+        tagEl.style.color = '#22c55e';
+        tagEl.style.background = 'rgba(34, 197, 94, 0.18)';
+      }
+      const barEl = document.getElementById('agy-zone-bar');
+      if (barEl) { barEl.style.width = '0%'; barEl.style.background = '#22c55e'; }
+      const usedEl = document.getElementById('agy-zone-used');
+      if (usedEl) { usedEl.innerText = '0 / 250k (0%)'; usedEl.style.color = '#22c55e'; }
+      const rawEl = document.getElementById('agy-zone-raw');
+      if (rawEl) rawEl.innerText = '0 / 1.0M (0%)';
+      const descEl = document.getElementById('agy-zone-desc');
+      if (descEl) { descEl.innerText = 'Contexto limpo'; descEl.style.color = '#22c55e'; }
+      const cacheBadge = document.getElementById('agy-cache-badge');
+      if (cacheBadge) cacheBadge.innerText = '⚡ Cache: 0%';
+      const popCost = document.getElementById('agy-popover-cost');
+      if (popCost) popCost.innerText = '~$0.0000';
+      const popSaved = document.getElementById('agy-popover-saved');
+      if (popSaved) popSaved.innerText = 'Economia: -$0.0000';
+      const tagSys = document.getElementById('agy-tag-system');
+      if (tagSys) tagSys.innerText = '🧠 Sistema: 0';
+      const tagFiles = document.getElementById('agy-tag-files');
+      if (tagFiles) tagFiles.innerText = '📄 Arquivos: 0';
+      const tagCmds = document.getElementById('agy-tag-cmds');
+      if (tagCmds) tagCmds.innerText = '💻 Saídas: 0';
+      const topConsumers = document.getElementById('agy-top-consumers');
+      if (topConsumers) topConsumers.innerHTML = '<span style="opacity: 0.7;">Pronto para tarefas.</span>';
+      const sectionEl = document.getElementById('agy-subagents-section');
+      if (sectionEl) sectionEl.style.display = 'none';
+      return;
+    }
+
+    const totalTokens = data.totalTokens;
+    const pct = Math.min(100, Math.round((totalTokens / SMART_LIMIT) * 1000) / 10);
+    const rawPct = Math.min(100, Math.round((totalTokens / RAW_LIMIT) * 1000) / 10);
+    const zone = getZone(pct);
+
+    const tagEl = document.getElementById('agy-zone-tag');
+    const barEl = document.getElementById('agy-zone-bar');
+    const usedEl = document.getElementById('agy-zone-used');
+    const rawEl = document.getElementById('agy-zone-raw');
+    const descEl = document.getElementById('agy-zone-desc');
+
+    if (tagEl) {
+      tagEl.innerText = zone.tag;
+      tagEl.style.color = zone.color;
+      tagEl.style.background = zone.bg;
+    }
+    if (barEl) {
+      barEl.style.width = pct + '%';
+      barEl.style.background = zone.color;
+    }
+    if (usedEl) {
+      usedEl.innerText = `${formatTokens(totalTokens)} / 250k (${pct}%)`;
+      usedEl.style.color = zone.color;
+    }
+    if (rawEl) {
+      rawEl.innerText = `${formatTokens(totalTokens)} / 1.0M (${rawPct}%)`;
+    }
+    if (descEl) {
+      descEl.innerText = zone.desc;
+      descEl.style.color = zone.color;
+    }
+
+    const cacheBadge = document.getElementById('agy-cache-badge');
+    if (cacheBadge) {
+      cacheBadge.innerText = `⚡ Cache: ${data.cachePct || 0}%`;
+      cacheBadge.title = `${formatTokens(data.cachedTokens || 0)} tokens em cache rápido`;
+    }
+
+    const costs = data.costs || calculateCosts(data.inputTokens, data.cachedTokens, data.outputTokens, data.pricing || getModelPricing(data.latestUsage?.model, totalTokens));
+
+    const popCost = document.getElementById('agy-popover-cost');
+    if (popCost) popCost.innerText = `~${formatUSD(costs.totalCost)}`;
+    const popSaved = document.getElementById('agy-popover-saved');
+    if (popSaved) {
+      popSaved.innerText = `Economia: -${formatUSD(costs.savedCost)}`;
+      popSaved.title = `Economia real via cache: ${formatUSD(costs.savedCost)} (${formatBRL(costs.savedCost)})`;
+    }
+
+    const tagSys = document.getElementById('agy-tag-system');
+    if (tagSys) tagSys.innerText = `🧠 Sistema: ~${formatTokens(data.breakdown?.system || 0)}`;
+    const tagFiles = document.getElementById('agy-tag-files');
+    if (tagFiles) tagFiles.innerText = `📄 Arquivos: ~${formatTokens(data.breakdown?.files || 0)}`;
+    const tagCmds = document.getElementById('agy-tag-cmds');
+    if (tagCmds) tagCmds.innerText = `💻 Saídas: ~${formatTokens(data.breakdown?.commands || 0)}`;
+
+    const topConsumers = document.getElementById('agy-top-consumers');
+    if (topConsumers) {
+      const topItems = [];
+      if (data.files && data.files[0]) topItems.push(`📄 ${data.files[0].name} (~${formatTokens(data.files[0].tokensEst)})`);
+      if (data.files && data.files[1]) topItems.push(`📄 ${data.files[1].name} (~${formatTokens(data.files[1].tokensEst)})`);
+      if (data.commands && data.commands[0]) topItems.push(`💻 ${data.commands[0].cmd.slice(0, 24)}... (~${formatTokens(data.commands[0].tokensEst)})`);
+
+      if (topItems.length > 0) {
+        topConsumers.innerHTML = topItems.slice(0, 2).map(it => `
+          <div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; opacity:0.85;">${it}</div>
+        `).join('');
+      } else {
+        topConsumers.innerHTML = '<span style="opacity: 0.7;">Consumo equilibrado</span>';
+      }
+    }
+
+    // Seção de subagentes no popover (exibida apenas na sessão principal quando houver subagentes)
+    const sectionEl = document.getElementById('agy-subagents-section');
+    const countEl = document.getElementById('agy-subagents-count');
+    const listEl = document.getElementById('agy-subagents-list');
+
+    if (sectionEl && listEl && countEl) {
+      if (!isSubagent && latestSubagentsList && latestSubagentsList.length > 0) {
+        sectionEl.style.display = 'block';
+        countEl.innerText = String(latestSubagentsList.length);
+        listEl.innerHTML = latestSubagentsList.map(s => `
+          <div style="display:flex; justify-content:space-between; align-items:center; padding: 2px 0;">
+            <span style="opacity: 0.9; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">• ${s.name}</span>
+            <span style="color: ${s.zone.color}; font-weight: 600; font-variant-numeric: tabular-nums;">${formatTokens(s.totalTokens)} (${s.pct}%)</span>
+          </div>
+        `).join('');
+      } else {
+        sectionEl.style.display = 'none';
+      }
+    }
+  }
+
+  function showPopover(targetEl, data, scopeTitle, isSubagent = false) {
+    clearTimeout(hideTimer);
+    populatePopoverData(data, scopeTitle, isSubagent);
+    popover.style.display = 'block';
+    positionPopover(targetEl);
+  }
+
+  function scheduleHidePopover() {
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(() => {
+      popover.style.display = 'none';
+    }, 150);
+  }
+
+  popover.addEventListener('mouseenter', () => clearTimeout(hideTimer));
+  popover.addEventListener('mouseleave', scheduleHidePopover);
+
+  popover.querySelector('#agy-btn-inspect')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    scheduleHidePopover();
+    openModal(currentPopoverData, currentPopoverScope);
+  });
+
+  // 5. MODAL DE INSPEÇÃO DETALHADA DO CONTEXTO COM MULTI-ESCOPO (SUBAGENTE & PRINCIPAL)
   const modal = document.createElement('div');
   modal.id = MODAL_ID;
-  modal.style.cssText = 'display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(5px); z-index: 9999999; align-items: center; justify-content: center; font-family: var(--font-sans, system-ui, -apple-system, sans-serif); color: var(--foreground, #f2f2f2); box-sizing: border-box;';
+  modal.style.cssText = 'display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(5px); z-index: 999999999; align-items: center; justify-content: center; font-family: var(--font-sans, system-ui, -apple-system, sans-serif); color: var(--foreground, #f2f2f2); box-sizing: border-box;';
 
   modal.innerHTML = `
-    <div id="agy-modal-card" style="width: 740px; max-width: 94vw; max-height: 85vh; background: var(--card, #18181b); border: 1px solid var(--border, rgba(255, 255, 255, 0.14)); border-radius: 14px; box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7); display: flex; flex-direction: column; overflow: hidden; animation: agyFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);">
+    <div id="agy-modal-card" style="width: 760px; max-width: 95vw; max-height: 88vh; background: var(--card, #18181b); border: 1px solid var(--border, rgba(255, 255, 255, 0.14)); border-radius: 14px; box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7); display: flex; flex-direction: column; overflow: hidden; animation: agyFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);">
       
       <!-- Modal Header -->
-      <div style="padding: 14px 18px; border-bottom: 1px solid var(--border, rgba(255,255,255,0.1)); display: flex; justify-content: space-between; align-items: center;">
+      <div style="padding: 12px 18px; border-bottom: 1px solid var(--border, rgba(255,255,255,0.1)); display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
         <div style="display: flex; align-items: center; gap: 8px;">
-          <span style="font-size: 15px; font-weight: 700; letter-spacing: -0.01em;">Context Window Inspector</span>
-          <span id="agy-modal-tag" style="font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 4px; background: rgba(34, 197, 94, 0.18); color: #22c55e;">
+          <span style="font-size: 14.5px; font-weight: 700; letter-spacing: -0.01em;">Context Window Inspector</span>
+          <span id="agy-modal-tag" style="font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; background: rgba(34, 197, 94, 0.18); color: #22c55e;">
             SMART ZONE ✓
           </span>
         </div>
-        <button id="agy-modal-close" type="button" style="background: transparent; border: none; color: var(--muted-foreground, #999); font-size: 18px; line-height: 1; cursor: pointer; padding: 4px 8px; border-radius: 6px; transition: color 0.15s, background 0.15s;">✕</button>
+
+        <!-- Seletor de Sessão / Escopo (Conversa Principal vs Subagentes) -->
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <span style="font-size: 10.5px; color: var(--muted-foreground, #888); font-weight: 500;">Escopo:</span>
+          <select id="agy-session-select" style="background: var(--secondary, #27272a); color: var(--foreground, #f4f4f5); border: 1px solid var(--border, rgba(255,255,255,0.18)); border-radius: 6px; padding: 4px 8px; font-size: 11px; font-weight: 500; cursor: pointer; outline: none; max-width: 260px;">
+            <option value="main">🌐 Conversa Principal</option>
+          </select>
+          <button id="agy-modal-close" type="button" style="background: transparent; border: none; color: var(--muted-foreground, #999); font-size: 18px; line-height: 1; cursor: pointer; padding: 4px 8px; border-radius: 6px; margin-left: 6px; transition: color 0.15s, background 0.15s;">✕</button>
+        </div>
       </div>
 
       <!-- Quick Metrics Ribbon -->
@@ -568,7 +807,7 @@
     </div>
   `;
 
-  // Animação de fade-in
+  // Estilos globais dinâmicos
   const styleEl = document.createElement('style');
   styleEl.textContent = `
     @keyframes agyFadeIn {
@@ -577,20 +816,15 @@
     }
     .agy-tab-btn:hover { color: var(--foreground, #fff) !important; }
     .agy-table-row:hover { background: rgba(255, 255, 255, 0.04) !important; }
+    .agy-subagent-badge:hover { filter: brightness(1.25) !important; }
   `;
   document.head.appendChild(styleEl);
 
   // Inserção do modal no body
   document.body.appendChild(modal);
 
-  // Fechar modal
   function closeModal() {
     modal.style.display = 'none';
-  }
-
-  function openModal() {
-    modal.style.display = 'flex';
-    renderModalTab(activeTab);
   }
 
   modal.querySelector('#agy-modal-close').addEventListener('click', closeModal);
@@ -611,16 +845,171 @@
       });
       btn.style.borderBottomColor = '#22c55e';
       btn.style.color = '#22c55e';
-      renderModalTab(activeTab);
+      renderModalTab(activeTab, activeModalData);
     });
   });
 
+  // Mudança no select de escopo do modal
+  const sessionSelect = modal.querySelector('#agy-session-select');
+  if (sessionSelect) {
+    sessionSelect.addEventListener('change', () => {
+      const val = sessionSelect.value;
+      if (val === 'main') {
+        renderModalWithData(currentContextData, 'Conversa Principal');
+      } else {
+        const sub = latestSubagentsList.find(s => s.cascadeId === val);
+        if (sub && sub.details) {
+          renderModalWithData(sub.details, `🤖 ${sub.name}`);
+        }
+      }
+    });
+  }
+
+  function renderModalWithData(data, scopeName) {
+    activeModalData = data;
+    activeModalScope = scopeName || 'Conversa Principal';
+
+    const mTag = document.getElementById('agy-modal-tag');
+    const mTotal = document.getElementById('agy-m-total');
+    const mPct = document.getElementById('agy-m-pct');
+    const mCache = document.getElementById('agy-m-cache');
+    const mCachePct = document.getElementById('agy-m-cache-pct');
+    const mCost = document.getElementById('agy-m-cost');
+    const mCostSub = document.getElementById('agy-m-cost-sub');
+    const mFiles = document.getElementById('agy-m-files');
+    const mFilesTokens = document.getElementById('agy-m-files-tokens');
+    const mCmds = document.getElementById('agy-m-cmds');
+    const mCmdsTokens = document.getElementById('agy-m-cmds-tokens');
+    const mRawRatio = document.getElementById('agy-m-raw-ratio');
+
+    const bSys = document.getElementById('agy-bar-sys');
+    const bFiles = document.getElementById('agy-bar-files');
+    const bCmds = document.getElementById('agy-bar-cmds');
+    const bDiag = document.getElementById('agy-bar-dialog');
+
+    const tabFilesCount = document.getElementById('agy-tab-count-files');
+    const tabCmdsCount = document.getElementById('agy-tab-count-commands');
+    const tabSubCount = document.getElementById('agy-tab-count-subagents');
+
+    if (!data || data.totalTokens === 0) {
+      if (mTag) {
+        mTag.innerText = 'SMART ZONE ✓';
+        mTag.style.color = '#22c55e';
+        mTag.style.background = 'rgba(34, 197, 94, 0.18)';
+      }
+      if (mTotal) mTotal.innerText = '0 tokens';
+      if (mPct) { mPct.innerText = '0% do limite inteligente'; mPct.style.color = '#22c55e'; }
+      if (mCache) mCache.innerText = '0 tokens';
+      if (mCachePct) mCachePct.innerText = '0% em cache rápido';
+      if (mCost) mCost.innerText = '~$0.0000';
+      if (mCostSub) mCostSub.innerText = 'Economia de 75% via Cache (-$0.000)';
+      if (mFiles) mFiles.innerText = '0 arq';
+      if (mFilesTokens) mFilesTokens.innerText = '0 tokens est.';
+      if (mCmds) mCmds.innerText = '0 cmds';
+      if (mCmdsTokens) mCmdsTokens.innerText = '0 tokens est.';
+      if (mRawRatio) mRawRatio.innerText = '0 / 1.0M (0% capacidade física)';
+
+      if (bSys) bSys.style.width = '0%';
+      if (bFiles) bFiles.style.width = '0%';
+      if (bCmds) bCmds.style.width = '0%';
+      if (bDiag) bDiag.style.width = '0%';
+
+      if (tabFilesCount) tabFilesCount.innerText = '0';
+      if (tabCmdsCount) tabCmdsCount.innerText = '0';
+      if (tabSubCount) tabSubCount.innerText = String(latestSubagentsList.length);
+
+      renderModalTab(activeTab, null);
+      return;
+    }
+
+    const totalTokens = data.totalTokens;
+    const pct = Math.min(100, Math.round((totalTokens / SMART_LIMIT) * 1000) / 10);
+    const rawPct = Math.min(100, Math.round((totalTokens / RAW_LIMIT) * 1000) / 10);
+    const zone = getZone(pct);
+    const costs = data.costs || calculateCosts(data.inputTokens, data.cachedTokens, data.outputTokens, data.pricing || getModelPricing(data.latestUsage?.model, totalTokens));
+
+    if (mTag) {
+      mTag.innerText = zone.tag;
+      mTag.style.color = zone.color;
+      mTag.style.background = zone.bg;
+    }
+    if (mTotal) mTotal.innerText = `${formatTokens(totalTokens)} / 250k`;
+    if (mPct) {
+      mPct.innerText = `${pct}% do limite inteligente (${zone.tag})`;
+      mPct.style.color = zone.color;
+    }
+    if (mCache) mCache.innerText = `${formatTokens(data.cachedTokens)}`;
+    if (mCachePct) mCachePct.innerText = `${data.cachePct}% em cache rápido`;
+
+    if (mCost) mCost.innerText = `~${formatUSD(costs.totalCost)}`;
+    if (mCostSub) {
+      mCostSub.innerText = `Economia de ${costs.pricing.cacheDiscountPct}% via Cache (-${formatUSD(costs.savedCost)})`;
+      mCostSub.title = `Economia real calculada: ${formatUSD(costs.savedCost)} (${formatBRL(costs.savedCost)})`;
+    }
+
+    if (mFiles) mFiles.innerText = `${data.filesCount} arq`;
+    if (mFilesTokens) mFilesTokens.innerText = `~${formatTokens(data.breakdown.files)} tokens`;
+
+    if (mCmds) mCmds.innerText = `${data.commandsCount} cmds`;
+    if (mCmdsTokens) mCmdsTokens.innerText = `~${formatTokens(data.breakdown.commands)} tokens`;
+
+    if (mRawRatio) mRawRatio.innerText = `${formatTokens(totalTokens)} / 1.0M (${rawPct}% bruto)`;
+
+    // Barras segmentadas
+    const bSysPct = Math.min(100, (data.breakdown.system / totalTokens) * 100);
+    const bFilesPct = Math.min(100, (data.breakdown.files / totalTokens) * 100);
+    const bCmdsPct = Math.min(100, (data.breakdown.commands / totalTokens) * 100);
+    const bDiagPct = Math.max(0, 100 - (bSysPct + bFilesPct + bCmdsPct));
+
+    if (bSys) bSys.style.width = bSysPct + '%';
+    if (bFiles) bFiles.style.width = bFilesPct + '%';
+    if (bCmds) bCmds.style.width = bCmdsPct + '%';
+    if (bDiag) bDiag.style.width = bDiagPct + '%';
+
+    if (tabFilesCount) tabFilesCount.innerText = String(data.filesCount);
+    if (tabCmdsCount) tabCmdsCount.innerText = String(data.commandsCount);
+    if (tabSubCount) tabSubCount.innerText = String(latestSubagentsList.length);
+
+    renderModalTab(activeTab, data);
+  }
+
+  function openModal(data, scopeTitle, selectedCascadeId) {
+    const targetData = data || currentContextData;
+    const targetScope = scopeTitle || 'Conversa Principal';
+
+    // Popula as opções do seletor de sessão
+    const select = modal.querySelector('#agy-session-select');
+    if (select) {
+      select.innerHTML = '';
+      const mainOpt = document.createElement('option');
+      mainOpt.value = 'main';
+      mainOpt.innerText = `🌐 Conversa Principal (~${formatTokens(currentContextData?.totalTokens || 0)})`;
+      select.appendChild(mainOpt);
+
+      latestSubagentsList.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.cascadeId;
+        opt.innerText = `🤖 ${s.name} (~${formatTokens(s.totalTokens)})`;
+        select.appendChild(opt);
+      });
+
+      if (selectedCascadeId && selectedCascadeId !== 'main') {
+        select.value = selectedCascadeId;
+      } else {
+        select.value = 'main';
+      }
+    }
+
+    renderModalWithData(targetData, targetScope);
+    modal.style.display = 'flex';
+  }
+
   // Renderizador de abas do modal
-  function renderModalTab(tab) {
+  function renderModalTab(tab, activeData) {
     const container = modal.querySelector('#agy-tab-content');
     if (!container) return;
 
-    const data = currentContextData;
+    const data = activeData || activeModalData;
     if (!data) {
       container.innerHTML = `
         <div style="text-align: center; padding: 40px 20px; color: var(--muted-foreground, #888);">
@@ -661,7 +1050,7 @@
             </div>
           </div>
 
-          <!-- Gemini Context Caching Info -->
+          <!-- Context Caching Info -->
           <div style="background: rgba(56, 189, 248, 0.06); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 8px; padding: 10px 12px; display: flex; align-items: center; justify-content: space-between;">
             <div>
               <div style="font-weight: 600; color: #38bdf8; font-size: 11.5px;">⚡ Gemini Context Caching Ativo (${data.cachePct}%)</div>
@@ -814,7 +1203,7 @@
       `;
     } else if (tab === 'files') {
       if (data.files.length === 0) {
-        container.innerHTML = `<div style="text-align:center; padding: 30px; color: var(--muted-foreground, #888);">Nenhum arquivo foi lido para o contexto nesta conversa até o momento.</div>`;
+        container.innerHTML = `<div style="text-align:center; padding: 30px; color: var(--muted-foreground, #888);">Nenhum arquivo foi lido para o contexto nesta sessão até o momento.</div>`;
         return;
       }
       container.innerHTML = `
@@ -862,29 +1251,58 @@
         </div>
       `;
     } else if (tab === 'subagents') {
-      const subagentNodes = Array.from(document.querySelectorAll('[data-testid="subagent-node"]'));
-      if (subagentNodes.length === 0) {
+      const isViewingSubagent = activeModalData && activeModalData !== currentContextData;
+      if (latestSubagentsList.length === 0) {
         container.innerHTML = `<div style="text-align:center; padding: 30px; color: var(--muted-foreground, #888);">Nenhum subagente foi criado a partir desta sessão.</div>`;
         return;
       }
+
       container.innerHTML = `
         <div style="display: flex; flex-direction: column; gap: 8px;">
-          <div style="font-size: 11px; color: var(--muted-foreground, #aaa); margin-bottom: 4px;">Subagentes operam com seus próprios contextos em paralelo, preservando a janela de contexto da conversa principal.</div>
-          ${subagentNodes.map(node => {
-            const name = node.querySelector('span')?.innerText?.trim() || 'Subagente';
-            const badge = node.querySelector('.agy-subagent-badge')?.innerText || 'Ativo';
+          <div style="font-size: 11px; color: var(--muted-foreground, #aaa); margin-bottom: 4px;">
+            ${isViewingSubagent 
+              ? 'Você está inspecionando um subagente. Abaixo estão todos os subagentes ativos na árvore desta tarefa:' 
+              : 'Subagentes operam com seus próprios contextos em paralelo, preservando a janela de contexto da conversa principal. Clique em qualquer subagente para inspecionar seus detalhes:'}
+          </div>
+          ${latestSubagentsList.map(s => {
+            const isCurrent = activeModalData && activeModalData.cascadeId === s.cascadeId;
             return `
-              <div style="padding: 10px 12px; background: rgba(255,255,255,0.04); border: 1px solid var(--border, rgba(255,255,255,0.08)); border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                  <div style="font-weight: 600; color: var(--foreground, #fff); font-size: 12px;">🤖 ${name}</div>
-                  <div style="font-size: 10px; color: var(--muted-foreground, #888); margin-top: 2px;">Contexto segregado e isolado</div>
+              <div style="padding: 10px 14px; background: ${isCurrent ? 'rgba(34, 197, 94, 0.08)' : 'rgba(255,255,255,0.03)'}; border: 1px solid ${isCurrent ? 'rgba(34, 197, 94, 0.3)' : 'var(--border, rgba(255,255,255,0.08))'}; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+                <div style="min-width: 0; flex: 1;">
+                  <div style="font-weight: 600; color: var(--foreground, #fff); font-size: 12px; display: flex; align-items: center; gap: 6px;">
+                    <span>🤖 ${s.name}</span>
+                    ${isCurrent ? '<span style="font-size: 9.5px; padding: 1px 5px; border-radius: 3px; background: rgba(34, 197, 94, 0.2); color: #22c55e;">Atualmente Selecionado</span>' : ''}
+                  </div>
+                  <div style="font-size: 10px; color: var(--muted-foreground, #888); margin-top: 2px;">
+                    Tokens: <strong style="color: ${s.zone.color};">${formatTokens(s.totalTokens)}</strong> (${s.pct}% da Smart Zone) • ${s.details?.filesCount || 0} arquivos • ${s.details?.commandsCount || 0} comandos
+                  </div>
                 </div>
-                <div style="font-weight: 600; font-size: 11px; color: #22c55e;">${badge}</div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-weight: 700; font-size: 10.5px; padding: 2px 7px; border-radius: 4px; background: ${s.zone.bg}; color: ${s.zone.color};">
+                    ${s.zone.tag}
+                  </span>
+                  <button type="button" class="agy-inspect-subagent-btn" data-cascade-id="${s.cascadeId}" style="background: var(--secondary, rgba(255,255,255,0.08)); border: 1px solid var(--border, rgba(255,255,255,0.15)); color: var(--foreground, #eee); border-radius: 6px; padding: 4px 8px; font-size: 10.5px; font-weight: 600; cursor: pointer; transition: background 0.15s ease;">
+                    Inspecionar ↗
+                  </button>
+                </div>
               </div>
             `;
           }).join('')}
         </div>
       `;
+
+      container.querySelectorAll('.agy-inspect-subagent-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const cascadeId = btn.getAttribute('data-cascade-id');
+          const sub = latestSubagentsList.find(s => s.cascadeId === cascadeId);
+          if (sub && sub.details) {
+            const select = modal.querySelector('#agy-session-select');
+            if (select) select.value = cascadeId;
+            renderModalWithData(sub.details, `🤖 ${sub.name}`);
+          }
+        });
+      });
     } else if (tab === 'tips') {
       container.innerHTML = `
         <div style="display: flex; flex-direction: column; gap: 10px; line-height: 1.5; color: var(--foreground, #ddd);">
@@ -906,170 +1324,114 @@
     }
   }
 
-  // Hover Popover
-  const popover = widget.querySelector('#agy-zone-popover');
-  let hideTimer = null;
+  // 6. EVENTOS DE HOVER E CLIQUE NOS WIDGETS
   widget.addEventListener('mouseenter', () => {
-    clearTimeout(hideTimer);
     widget.style.backgroundColor = 'var(--secondary, rgba(255, 255, 255, 0.08))';
-    if (widget.dataset.position === 'top') {
-      popover.style.bottom = 'auto';
-      popover.style.top = 'calc(100% + 8px)';
-      const arrow = popover.querySelector('div:last-child');
-      if (arrow) {
-        arrow.style.bottom = 'auto';
-        arrow.style.top = '-5px';
-        arrow.style.borderRight = 'none';
-        arrow.style.borderBottom = 'none';
-        arrow.style.borderLeft = '1px solid var(--border, rgba(255, 255, 255, 0.12))';
-        arrow.style.borderTop = '1px solid var(--border, rgba(255, 255, 255, 0.12))';
-      }
-    } else {
-      popover.style.top = 'auto';
-      popover.style.bottom = 'calc(100% + 10px)';
-      const arrow = popover.querySelector('div:last-child');
-      if (arrow) {
-        arrow.style.top = 'auto';
-        arrow.style.bottom = '-5px';
-        arrow.style.borderLeft = 'none';
-        arrow.style.borderTop = 'none';
-        arrow.style.borderRight = '1px solid var(--border, rgba(255, 255, 255, 0.12))';
-        arrow.style.borderBottom = '1px solid var(--border, rgba(255, 255, 255, 0.12));';
-      }
-    }
-    popover.style.display = 'block';
+    showPopover(widget, currentContextData, 'CONTEXT WINDOW', false);
   });
-
   widget.addEventListener('mouseleave', () => {
-    hideTimer = setTimeout(() => {
-      widget.style.backgroundColor = 'transparent';
-      popover.style.display = 'none';
-    }, 120);
-  });
-  popover.addEventListener('mouseenter', () => clearTimeout(hideTimer));
-  popover.addEventListener('mouseleave', () => {
     widget.style.backgroundColor = 'transparent';
-    popover.style.display = 'none';
+    scheduleHidePopover();
   });
-
-  // Clique no botão ou widget abre o Context Inspector Modal
   widget.addEventListener('click', (e) => {
     e.stopPropagation();
-    openModal();
-  });
-  popover.querySelector('#agy-btn-inspect')?.addEventListener('click', (e) => {
-    e.stopPropagation();
-    openModal();
+    scheduleHidePopover();
+    openModal(currentContextData, 'Conversa Principal', 'main');
   });
 
-  // Localiza âncora: barra de input do modelo OU breadcrumb no topo
+  function getActiveBreadcrumbSubagent() {
+    const breadcrumbs = Array.from(document.querySelectorAll('[data-testid="breadcrumb-segment"]'));
+    if (breadcrumbs.length === 0) return null;
+    const last = breadcrumbs[breadcrumbs.length - 1];
+    const text = (last?.innerText || '').trim().toLowerCase();
+    if (!text) return null;
+
+    return latestSubagentsList.find(s => {
+      const sName = s.name.toLowerCase();
+      return sName === text || text.includes(sName) || sName.includes(text);
+    }) || null;
+  }
+
+  breadcrumbWidget.addEventListener('mouseenter', () => {
+    breadcrumbWidget.style.backgroundColor = 'var(--secondary, rgba(255, 255, 255, 0.08))';
+    const sub = getActiveBreadcrumbSubagent();
+    if (sub && sub.details) {
+      showPopover(breadcrumbWidget, sub.details, `🤖 SUBAGENTE: ${sub.name}`, true);
+    } else {
+      showPopover(breadcrumbWidget, currentContextData, 'CONTEXT WINDOW', false);
+    }
+  });
+
+  breadcrumbWidget.addEventListener('mouseleave', () => {
+    breadcrumbWidget.style.backgroundColor = 'transparent';
+    scheduleHidePopover();
+  });
+
+  breadcrumbWidget.addEventListener('click', (e) => {
+    e.stopPropagation();
+    scheduleHidePopover();
+    const sub = getActiveBreadcrumbSubagent();
+    if (sub && sub.details) {
+      openModal(sub.details, `🤖 ${sub.name}`, sub.cascadeId);
+    } else {
+      openModal(currentContextData, 'Conversa Principal', 'main');
+    }
+  });
+
+  // 7. MONTAGEM DOS WIDGETS NO DOM
   function ensureWidgetMounted() {
+    // 1. Widget principal ao lado do seletor de modelos no rodapé
     const modelTrigger = document.querySelector('button[data-testid="model-selector-trigger"]');
     if (modelTrigger && modelTrigger.parentElement) {
-      widget.dataset.position = 'bottom';
       if (widget.parentElement !== modelTrigger.parentElement || widget.previousElementSibling !== modelTrigger) {
         modelTrigger.after(widget);
       }
-      return true;
+    } else if (widget.parentElement) {
+      widget.remove();
     }
 
+    // 2. Widget de breadcrumb no topo da janela / visualização do subagente
     const breadcrumbs = Array.from(document.querySelectorAll('[data-testid="breadcrumb-segment"]'));
     if (breadcrumbs.length > 0) {
       const last = breadcrumbs[breadcrumbs.length - 1];
       if (last && last.parentElement) {
-        widget.dataset.position = 'top';
-        if (widget.parentElement !== last.parentElement || widget.previousElementSibling !== last) {
-          last.after(widget);
+        if (breadcrumbWidget.parentElement !== last.parentElement || breadcrumbWidget.previousElementSibling !== last) {
+          last.after(breadcrumbWidget);
         }
-        return true;
       }
+    } else if (breadcrumbWidget.parentElement) {
+      breadcrumbWidget.remove();
     }
-
-    return false;
   }
 
-  // 3. RESET COMPLETO PARA NOVA CONVERSA (CORREÇÃO DO BUG 1)
+  // 8. RESET COMPLETO PARA NOVA CONVERSA
   function resetToEmptyState() {
     currentContextData = null;
 
-    // Anel SVG vazio
     const ring = document.getElementById('agy-zone-ring');
     if (ring) {
       ring.style.stroke = '#22c55e';
       ring.style.strokeDashoffset = CIRCLE_C;
     }
-
-    // Título e escopo
-    const scopeEl = document.getElementById('agy-scope-title');
-    if (scopeEl) scopeEl.innerText = 'CONTEXT WINDOW';
-
-    const tagEl = document.getElementById('agy-zone-tag');
-    if (tagEl) {
-      tagEl.innerText = 'SMART ZONE ✓';
-      tagEl.style.color = '#22c55e';
-      tagEl.style.background = 'rgba(34, 197, 94, 0.18)';
+    const bRing = document.getElementById('agy-breadcrumb-ring');
+    if (bRing) {
+      bRing.style.stroke = '#22c55e';
+      bRing.style.strokeDashoffset = CIRCLE_C;
     }
 
-    const barEl = document.getElementById('agy-zone-bar');
-    if (barEl) {
-      barEl.style.width = '0%';
-      barEl.style.background = '#22c55e';
+    if (popover.style.display === 'block') {
+      populatePopoverData(null, 'CONTEXT WINDOW', false);
     }
-
-    const usedEl = document.getElementById('agy-zone-used');
-    if (usedEl) {
-      usedEl.innerText = '0 / 250k (0%)';
-      usedEl.style.color = '#22c55e';
-    }
-
-    const rawEl = document.getElementById('agy-zone-raw');
-    if (rawEl) rawEl.innerText = '0 / 1.0M (0%)';
-
-    const descEl = document.getElementById('agy-zone-desc');
-    if (descEl) {
-      descEl.innerText = 'Nova conversa (contexto limpo)';
-      descEl.style.color = '#22c55e';
-    }
-
-    // Composição e cache
-    const cacheBadge = document.getElementById('agy-cache-badge');
-    if (cacheBadge) cacheBadge.innerText = '⚡ Cache: 0%';
-
-    const popCost = document.getElementById('agy-popover-cost');
-    if (popCost) popCost.innerText = '~$0.0000';
-    const popSaved = document.getElementById('agy-popover-saved');
-    if (popSaved) popSaved.innerText = 'Economia: -$0.0000';
-
-    const tagSys = document.getElementById('agy-tag-system');
-    if (tagSys) tagSys.innerText = '🧠 Sistema: 0';
-    const tagFiles = document.getElementById('agy-tag-files');
-    if (tagFiles) tagFiles.innerText = '📄 Arquivos: 0';
-    const tagCmds = document.getElementById('agy-tag-cmds');
-    if (tagCmds) tagCmds.innerText = '💻 Saídas: 0';
-
-    const topConsumers = document.getElementById('agy-top-consumers');
-    if (topConsumers) topConsumers.innerHTML = '<span style="font-style: italic; opacity: 0.7;">Pronto para nova tarefa.</span>';
-
-    // Subagentes
-    const sectionEl = document.getElementById('agy-subagents-section');
-    if (sectionEl) sectionEl.style.display = 'none';
-
-    // Modal ribbon resets
-    const mCost = document.getElementById('agy-m-cost');
-    if (mCost) mCost.innerText = '~$0.0000';
-    const mCostSub = document.getElementById('agy-m-cost-sub');
-    if (mCostSub) mCostSub.innerText = 'Economia de 75% via Cache (-$0.000)';
 
     // Remove badges órfãs de subagentes anteriores
     document.querySelectorAll('.agy-subagent-badge').forEach(b => b.remove());
 
-    // Se o modal estiver aberto, atualiza para o estado limpo
     if (modal.style.display === 'flex') {
-      renderModalTab(activeTab);
+      renderModalWithData(null, 'Conversa Principal');
     }
   }
 
-  // 4. ATUALIZAR BADGES NOS CARDS DE SUBAGENTES
+  // 9. ATUALIZAR BADGES INTERATIVAS NOS CARDS DE SUBAGENTES
   async function updateSubagentNodes() {
     const nodes = Array.from(document.querySelectorAll('[data-testid="subagent-node"]'));
     const subagentsList = [];
@@ -1084,33 +1446,58 @@
       const pct = Math.min(100, Math.round((totalTokens / SMART_LIMIT) * 1000) / 10);
       const zone = getZone(pct);
 
-      subagentsList.push({ name, totalTokens, pct, zone });
+      const subItem = { name, cascadeId, details, totalTokens, pct, zone };
+      subagentsList.push(subItem);
 
       let badge = node.querySelector('.agy-subagent-badge');
       if (!badge) {
         badge = document.createElement('div');
         badge.className = 'agy-subagent-badge';
-        badge.style.cssText = 'display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 9999px; margin-top: 3px; width: fit-content; transition: background 0.3s, color 0.3s;';
+        badge.style.cssText = 'display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 9999px; margin-top: 3px; width: fit-content; transition: all 0.15s ease; cursor: pointer; user-select: none;';
         node.appendChild(badge);
+
+        badge.addEventListener('mouseenter', () => {
+          badge.style.filter = 'brightness(1.25)';
+          const item = node.__agySubagentData;
+          if (item) {
+            showPopover(badge, item.details, `🤖 SUBAGENTE: ${item.name}`, true);
+          }
+        });
+
+        badge.addEventListener('mouseleave', () => {
+          badge.style.filter = 'none';
+          scheduleHidePopover();
+        });
+
+        badge.addEventListener('click', (e) => {
+          e.stopPropagation();
+          scheduleHidePopover();
+          const item = node.__agySubagentData;
+          if (item) {
+            openModal(item.details, `🤖 ${item.name}`, item.cascadeId);
+          }
+        });
       }
 
+      node.__agySubagentData = subItem;
       badge.style.background = zone.bg;
       badge.style.color = zone.color;
       badge.innerHTML = `<span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:${zone.color};"></span><span>${formatTokens(totalTokens)} / 250k (${pct}%)</span>`;
-      badge.title = `${name}: ${zone.tag} - ${formatTokens(totalTokens)} tokens`;
+      badge.title = `${name}: ${zone.tag} — Clique para inspecionar contexto`;
     }
 
+    latestSubagentsList = subagentsList;
     return subagentsList;
   }
 
-  // 5. ATUALIZAÇÃO GERAL DO CONTEXTO
+  // 10. ATUALIZAÇÃO GERAL DO CONTEXTO
   async function updateAll() {
     ensureWidgetMounted();
 
     const path = location.pathname;
     const match = path.match(/\/c\/([a-zA-Z0-9_-]+)/);
 
-    // Se estiver em rota de nova conversa (/ ou sem /c/<id>), reseta imediatamente!
+    // Rota de nova conversa sem ID
     if (!match) {
       resetToEmptyState();
       return;
@@ -1118,13 +1505,12 @@
 
     const currentCascadeId = match[1];
 
-    // Atualiza badges nos cards se existirem
+    // Atualiza badges nos cards de subagentes se existirem
     const subagents = await updateSubagentNodes();
 
     // Busca detalhes da conversa ativa
     const details = await fetchContextDetails(currentCascadeId);
 
-    // Se a conversa não tem dados/passos ainda, reseta para nova conversa
     if (!details || details.totalTokens === 0) {
       resetToEmptyState();
       return;
@@ -1137,157 +1523,42 @@
     const rawPct = Math.min(100, Math.round((totalTokens / RAW_LIMIT) * 1000) / 10);
     const zone = getZone(pct);
 
-    // Atualiza anel SVG
+    // Atualiza anel SVG do widget principal
     const ring = document.getElementById('agy-zone-ring');
+    const offset = Math.max(0, CIRCLE_C - (pct / 100) * CIRCLE_C);
     if (ring) {
       ring.style.stroke = zone.color;
-      const offset = Math.max(0, CIRCLE_C - (pct / 100) * CIRCLE_C);
       ring.style.strokeDashoffset = offset;
     }
+    widget.title = `Context Window: ${formatTokens(totalTokens)} / 250k (${pct}%) — ${zone.tag}`;
 
-    // Título do escopo
-    const scopeEl = document.getElementById('agy-scope-title');
-    const isSubagentView = widget.dataset.position === 'top';
-    if (scopeEl) {
-      scopeEl.innerText = isSubagentView ? 'SUBAGENTE CONTEXT' : 'CONTEXT WINDOW';
-    }
-
-    // Popover labels
-    const tagEl = document.getElementById('agy-zone-tag');
-    const barEl = document.getElementById('agy-zone-bar');
-    const usedEl = document.getElementById('agy-zone-used');
-    const rawEl = document.getElementById('agy-zone-raw');
-    const descEl = document.getElementById('agy-zone-desc');
-
-    if (tagEl) {
-      tagEl.innerText = zone.tag;
-      tagEl.style.color = zone.color;
-      tagEl.style.background = zone.bg;
-    }
-    if (barEl) {
-      barEl.style.width = pct + '%';
-      barEl.style.background = zone.color;
-    }
-    if (usedEl) {
-      usedEl.innerText = `${formatTokens(totalTokens)} / 250k (${pct}%)`;
-      usedEl.style.color = zone.color;
-    }
-    if (rawEl) {
-      rawEl.innerText = `${formatTokens(totalTokens)} / 1.0M (${rawPct}%)`;
-    }
-    if (descEl) {
-      descEl.innerText = zone.desc;
-      descEl.style.color = zone.color;
-    }
-
-    // Composição e cache no popover
-    const cacheBadge = document.getElementById('agy-cache-badge');
-    if (cacheBadge) {
-      cacheBadge.innerText = `⚡ Cache: ${details.cachePct}%`;
-      cacheBadge.title = `${formatTokens(details.cachedTokens)} tokens em cache rápido`;
-    }
-
-    const costs = details.costs || calculateCosts(details.inputTokens, details.cachedTokens, details.outputTokens, details.pricing || getModelPricing(details.latestUsage?.model, totalTokens));
-
-    const popCost = document.getElementById('agy-popover-cost');
-    if (popCost) popCost.innerText = `~${formatUSD(costs.totalCost)}`;
-    const popSaved = document.getElementById('agy-popover-saved');
-    if (popSaved) {
-      popSaved.innerText = `Economia: -${formatUSD(costs.savedCost)}`;
-      popSaved.title = `Economia real via cache: ${formatUSD(costs.savedCost)} (${formatBRL(costs.savedCost)})`;
-    }
-
-    const tagSys = document.getElementById('agy-tag-system');
-    if (tagSys) tagSys.innerText = `🧠 Sistema: ~${formatTokens(details.breakdown.system)}`;
-    const tagFiles = document.getElementById('agy-tag-files');
-    if (tagFiles) tagFiles.innerText = `📄 Arquivos: ~${formatTokens(details.breakdown.files)}`;
-    const tagCmds = document.getElementById('agy-tag-cmds');
-    if (tagCmds) tagCmds.innerText = `💻 Saídas: ~${formatTokens(details.breakdown.commands)}`;
-
-    // Top consumidores preview no popover
-    const topConsumers = document.getElementById('agy-top-consumers');
-    if (topConsumers) {
-      const topItems = [];
-      if (details.files[0]) topItems.push(`📄 ${details.files[0].name} (~${formatTokens(details.files[0].tokensEst)})`);
-      if (details.files[1]) topItems.push(`📄 ${details.files[1].name} (~${formatTokens(details.files[1].tokensEst)})`);
-      if (details.commands[0]) topItems.push(`💻 ${details.commands[0].cmd.slice(0, 24)}... (~${formatTokens(details.commands[0].tokensEst)})`);
-
-      if (topItems.length > 0) {
-        topConsumers.innerHTML = topItems.slice(0, 2).map(it => `
-          <div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; opacity:0.85;">${it}</div>
-        `).join('');
+    // Atualiza anel SVG do breadcrumb widget
+    const bRing = document.getElementById('agy-breadcrumb-ring');
+    if (bRing) {
+      const activeSub = getActiveBreadcrumbSubagent();
+      if (activeSub) {
+        const subOffset = Math.max(0, CIRCLE_C - (activeSub.pct / 100) * CIRCLE_C);
+        bRing.style.stroke = activeSub.zone.color;
+        bRing.style.strokeDashoffset = subOffset;
+        breadcrumbWidget.title = `Subagente ${activeSub.name}: ${formatTokens(activeSub.totalTokens)} / 250k (${activeSub.pct}%) — ${activeSub.zone.tag}`;
       } else {
-        topConsumers.innerHTML = '<span style="opacity: 0.7;">Consumo equilibrado</span>';
+        bRing.style.stroke = zone.color;
+        bRing.style.strokeDashoffset = offset;
+        breadcrumbWidget.title = `Context Window: ${formatTokens(totalTokens)} / 250k (${pct}%) — ${zone.tag}`;
       }
     }
 
-    // Seção de subagentes no popover
-    const sectionEl = document.getElementById('agy-subagents-section');
-    const countEl = document.getElementById('agy-subagents-count');
-    const listEl = document.getElementById('agy-subagents-list');
-
-    if (sectionEl && listEl && countEl) {
-      if (subagents && subagents.length > 0) {
-        sectionEl.style.display = 'block';
-        countEl.innerText = String(subagents.length);
-        listEl.innerHTML = subagents.map(s => `
-          <div style="display:flex; justify-content:space-between; align-items:center; padding: 2px 0;">
-            <span style="opacity: 0.9; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">• ${s.name}</span>
-            <span style="color: ${s.zone.color}; font-weight: 600; font-variant-numeric: tabular-nums;">${formatTokens(s.totalTokens)} (${s.pct}%)</span>
-          </div>
-        `).join('');
+    // Se o modal estiver aberto, atualiza a sessão atualmente selecionada
+    if (modal.style.display === 'flex') {
+      const select = modal.querySelector('#agy-session-select');
+      const selectedVal = select ? select.value : 'main';
+      if (selectedVal === 'main') {
+        renderModalWithData(currentContextData, 'Conversa Principal');
       } else {
-        sectionEl.style.display = 'none';
-      }
-    }
-
-    // Atualiza Modal (se estiver aberto)
-    const mTotal = document.getElementById('agy-m-total');
-    if (mTotal) {
-      mTotal.innerText = `${formatTokens(totalTokens)} / 250k`;
-      document.getElementById('agy-m-pct').innerText = `${pct}% do limite inteligente (${zone.tag})`;
-      document.getElementById('agy-m-pct').style.color = zone.color;
-      document.getElementById('agy-modal-tag').innerText = zone.tag;
-      document.getElementById('agy-modal-tag').style.color = zone.color;
-      document.getElementById('agy-modal-tag').style.background = zone.bg;
-
-      document.getElementById('agy-m-cache').innerText = `${formatTokens(details.cachedTokens)}`;
-      document.getElementById('agy-m-cache-pct').innerText = `${details.cachePct}% em cache rápido`;
-
-      const mCost = document.getElementById('agy-m-cost');
-      if (mCost) mCost.innerText = `~${formatUSD(costs.totalCost)}`;
-      const mCostSub = document.getElementById('agy-m-cost-sub');
-      if (mCostSub) {
-        mCostSub.innerText = `Economia de ${costs.pricing.cacheDiscountPct}% via Cache (-${formatUSD(costs.savedCost)})`;
-        mCostSub.title = `Economia real calculada: ${formatUSD(costs.savedCost)} (${formatBRL(costs.savedCost)})`;
-      }
-
-      document.getElementById('agy-m-files').innerText = `${details.filesCount} arquivos`;
-      document.getElementById('agy-m-files-tokens').innerText = `~${formatTokens(details.breakdown.files)} tokens`;
-
-      document.getElementById('agy-m-cmds').innerText = `${details.commandsCount} cmds`;
-      document.getElementById('agy-m-cmds-tokens').innerText = `~${formatTokens(details.breakdown.commands)} tokens`;
-
-      document.getElementById('agy-m-raw-ratio').innerText = `${formatTokens(totalTokens)} / 1.0M (${rawPct}% bruto)`;
-
-      // Barras segmentadas
-      const bSys = Math.min(100, (details.breakdown.system / totalTokens) * 100);
-      const bFiles = Math.min(100, (details.breakdown.files / totalTokens) * 100);
-      const bCmds = Math.min(100, (details.breakdown.commands / totalTokens) * 100);
-      const bDiag = Math.max(0, 100 - (bSys + bFiles + bCmds));
-
-      document.getElementById('agy-bar-sys').style.width = bSys + '%';
-      document.getElementById('agy-bar-files').style.width = bFiles + '%';
-      document.getElementById('agy-bar-cmds').style.width = bCmds + '%';
-      document.getElementById('agy-bar-dialog').style.width = bDiag + '%';
-
-      // Counts nas abas
-      document.getElementById('agy-tab-count-files').innerText = String(details.filesCount);
-      document.getElementById('agy-tab-count-commands').innerText = String(details.commandsCount);
-      document.getElementById('agy-tab-count-subagents').innerText = String(subagents.length);
-
-      if (modal.style.display === 'flex') {
-        renderModalTab(activeTab);
+        const sub = latestSubagentsList.find(s => s.cascadeId === selectedVal);
+        if (sub && sub.details) {
+          renderModalWithData(sub.details, `🤖 ${sub.name}`);
+        }
       }
     }
   }
