@@ -2,7 +2,7 @@
   const WIDGET_ID = 'agy-context-zone-widget';
   const BREADCRUMB_WIDGET_ID = 'agy-breadcrumb-context-widget';
   const MODAL_ID = 'agy-context-inspector-modal';
-  const VERSION = '1.2.0-cost-credits';
+  const VERSION = '1.2.2-gemini-38-flash';
 
   if (window.__agyWidgetVersion === VERSION && (document.getElementById(WIDGET_ID) || document.getElementById(BREADCRUMB_WIDGET_ID))) {
     return;
@@ -62,11 +62,51 @@
     };
   }
 
+  const MODEL_NAMES = {
+    'MODEL_PLACEHOLDER_M318': 'Gemini 3.8 Flash',
+    'MODEL_PLACEHOLDER_M319': 'Gemini 3.8 Flash',
+    'MODEL_PLACEHOLDER_M320': 'Gemini 3.8 Flash',
+    'MODEL_PLACEHOLDER_M298': 'Gemini 3.7 Flash',
+    'MODEL_PLACEHOLDER_M71': 'Gemini 3.6 Flash',
+    'MODEL_PLACEHOLDER_M35': 'Claude Sonnet 4.6',
+    'MODEL_PLACEHOLDER_M26': 'Claude Opus 4.6',
+    'MODEL_PLACEHOLDER_M16': 'Gemini 3.1 Pro',
+    'default': 'Gemini 3.8 Flash'
+  };
+
+  function detectModelName(rawModelId) {
+    // 1. Tenta ler diretamente do botão de seleção de modelo no DOM
+    const btn = document.querySelector('button[data-testid="model-selector-trigger"]') ||
+                document.querySelector('[data-testid*="model"]');
+    if (btn) {
+      const aria = (btn.getAttribute('aria-label') || '').trim();
+      const ariaMatch = aria.match(/current:\s*([A-Za-z0-9.\s]+)/i);
+      if (ariaMatch && ariaMatch[1]) {
+        return ariaMatch[1].replace(/\s+(Medium|Low|High)$/i, '').trim();
+      }
+      const text = (btn.innerText || '').trim();
+      if (text && text.length < 40 && (text.includes('Gemini') || text.includes('Claude') || text.includes('Flash') || text.includes('Pro') || text.includes('GPT'))) {
+        return text.replace(/\s+(Medium|Low|High)$/i, '').trim();
+      }
+    }
+
+    // 2. Mapeamento de placeholders internos do Antigravity
+    if (rawModelId && MODEL_NAMES[rawModelId]) {
+      return MODEL_NAMES[rawModelId];
+    }
+
+    if (rawModelId && !rawModelId.startsWith('MODEL_PLACEHOLDER')) {
+      return rawModelId;
+    }
+
+    return 'Gemini 3.8 Flash';
+  }
+
   // TABELA DE PRECIFICAÇÃO DA API (Google AI Studio / Vertex AI / Claude)
   const PRICING_TIERS = {
     'gemini-flash': {
       id: 'gemini-flash',
-      displayName: 'Gemini 2.0 / 1.5 Flash',
+      displayName: 'Gemini 3.8 Flash',
       provider: 'Google AI Studio',
       inputPricePerM: 0.10,
       cachePricePerM: 0.025, // 75% desconto no cache
@@ -75,7 +115,7 @@
     },
     'gemini-pro': {
       id: 'gemini-pro',
-      displayName: 'Gemini 1.5 / 2.5 Pro',
+      displayName: 'Gemini 3.1 Pro',
       provider: 'Google AI Studio',
       inputPricePerM: 1.25,      // <= 128k
       inputPricePerMHigh: 2.50,  // > 128k
@@ -85,7 +125,7 @@
     },
     'claude-sonnet': {
       id: 'claude-sonnet',
-      displayName: 'Claude 3.5 Sonnet',
+      displayName: 'Claude Sonnet 4.6',
       provider: 'Anthropic',
       inputPricePerM: 3.00,
       cachePricePerM: 0.30,      // 90% desconto
@@ -95,27 +135,31 @@
   };
 
   function getModelPricing(modelName, totalTokens) {
-    const m = (modelName || '').toLowerCase();
-    const btn = document.querySelector('button[data-testid="model-selector-trigger"]') ||
-                document.querySelector('[data-testid*="model"]');
-    const btnText = (btn?.innerText || '').toLowerCase();
+    const detectedName = detectModelName(modelName);
+    const m = detectedName.toLowerCase();
 
-    if (m.includes('claude') || m.includes('sonnet') || btnText.includes('claude') || btnText.includes('sonnet')) {
-      return PRICING_TIERS['claude-sonnet'];
+    if (m.includes('claude') || m.includes('sonnet') || m.includes('opus')) {
+      return {
+        ...PRICING_TIERS['claude-sonnet'],
+        displayName: detectedName
+      };
     }
 
-    if (m.includes('pro') || btnText.includes('pro')) {
+    if (m.includes('pro')) {
       const isOver128k = (totalTokens || 0) > 128000;
       const base = PRICING_TIERS['gemini-pro'];
       return {
         ...base,
-        displayName: isOver128k ? 'Gemini Pro (>128k)' : 'Gemini Pro (≤128k)',
+        displayName: isOver128k ? `${detectedName} (>128k)` : detectedName,
         inputPricePerM: isOver128k ? base.inputPricePerMHigh : base.inputPricePerM
       };
     }
 
     // Padrão: Gemini Flash
-    return PRICING_TIERS['gemini-flash'];
+    return {
+      ...PRICING_TIERS['gemini-flash'],
+      displayName: detectedName || 'Gemini 3.8 Flash'
+    };
   }
 
   function calculateCosts(uncachedInputTokens, cachedTokens, outputTokens, pricing) {
