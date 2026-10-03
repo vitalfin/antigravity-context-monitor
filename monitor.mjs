@@ -1,9 +1,13 @@
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import { fileURLToPath } from 'url';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT_FILE = path.join(os.homedir(), '.config/Antigravity/DevToolsActivePort');
-const WIDGET_PATH = path.join(os.homedir(), '.config/Antigravity/context-monitor/widget.js');
+const LOCAL_WIDGET_PATH = path.join(__dirname, 'widget.js');
+const LEGACY_WIDGET_PATH = path.join(os.homedir(), '.config/Antigravity/context-monitor/widget.js');
+const WIDGET_PATH = fs.existsSync(LOCAL_WIDGET_PATH) ? LOCAL_WIDGET_PATH : LEGACY_WIDGET_PATH;
 
 function getCDPPort() {
   try {
