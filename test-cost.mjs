@@ -3,9 +3,9 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 
-console.log('🧪 Iniciando testes de Custos e Créditos (v1.2.0)...');
+console.log('🧪 Starting Cost and Credit tests (v1.2.0)...');
 
-// 1. Testes de Unidade de Lógica de Precificação
+// 1. Pricing Tier Unit Tests
 const PRICING_TIERS = {
   'gemini-flash': {
     id: 'gemini-flash',
@@ -60,7 +60,7 @@ function formatUSD(val) {
   return '$' + val.toFixed(2);
 }
 
-// Teste 1: Valores exatos do prompt para Gemini Flash
+// Test 1: Exact prompt values for Gemini Flash
 // 20k uncached, 160k cached, 6k output
 const flashCosts = calculateCosts(20000, 160000, 6000, PRICING_TIERS['gemini-flash']);
 assert(Math.abs(flashCosts.costInput - 0.002) < 1e-9);
@@ -70,9 +70,9 @@ assert.strictEqual(Number(flashCosts.totalCost.toFixed(6)), 0.0084);
 assert.strictEqual(Number(flashCosts.savedCost.toFixed(6)), 0.012);
 assert.strictEqual(formatUSD(flashCosts.totalCost), '$0.0084');
 assert.strictEqual(formatUSD(flashCosts.savedCost), '$0.012');
-console.log('  ✓ Teste 1 passou: Cálculo Flash exato ($0.0084 total, $0.012 economia).');
+console.log('  ✓ Test 1 passed: Exact Flash calculation ($0.0084 total, $0.012 saved).');
 
-// Teste 2: Gemini Pro com contexto > 128k (deve aplicar tarifa escalonada $2.50)
+// Test 2: Gemini Pro with context > 128k (must apply tiered rate of $2.50)
 const proTier = {
   ...PRICING_TIERS['gemini-pro'],
   inputPricePerM: 2.50
@@ -82,30 +82,41 @@ assert.strictEqual(proCosts.costInput, 0.125);
 assert.strictEqual(proCosts.costCache, 0.03125);
 assert.strictEqual(proCosts.costOutput, 0.02);
 assert.strictEqual(proCosts.savedCost, (100000 / 1000000) * (2.50 - 0.3125));
-console.log('  ✓ Teste 2 passou: Gemini Pro tiered pricing (>128k = $2.50/M).');
+console.log('  ✓ Test 2 passed: Gemini Pro tiered pricing (>128k = $2.50/M).');
 
-// Teste 3: Claude Sonnet (90% desconto de cache, $3 input, $0.30 cache, $15 output)
+// Test 3: Claude Sonnet (90% cache discount, $3 input, $0.30 cache, $15 output)
 const claudeCosts = calculateCosts(10000, 50000, 1000, PRICING_TIERS['claude-sonnet']);
 assert.strictEqual(claudeCosts.costInput, 0.03);
 assert.strictEqual(claudeCosts.costCache, 0.015);
 assert.strictEqual(claudeCosts.costOutput, 0.015);
-assert.strictEqual(claudeCosts.savedCost, (50000 / 1000000) * (3.00 - 0.30)); // 0.135
-console.log('  ✓ Teste 3 passou: Claude 3.5 Sonnet pricing & 90% cache discount.');
+assert.strictEqual(claudeCosts.savedCost, (50000 / 1000000) * (3.00 - 0.30));
+console.log('  ✓ Test 3 passed: Claude 3.5 Sonnet pricing & 90% cache discount.');
 
-// Teste 4: Formatação de moedas
+// Test 4: Currency formatting
 assert.strictEqual(formatUSD(0), '$0.0000');
 assert.strictEqual(formatUSD(0.00005), '< $0.0001');
 assert.strictEqual(formatUSD(0.0084), '$0.0084');
 assert.strictEqual(formatUSD(0.023), '$0.023');
 assert.strictEqual(formatUSD(1.2345), '$1.23');
-console.log('  ✓ Teste 4 passou: Formatação USD com alta precisão.');
+console.log('  ✓ Test 4 passed: High precision USD formatting.');
 
-// Teste 5: Verificação de sintaxe de widget.js e monitor.mjs
+// Test 5: Syntax and structural integrity of widget.js
 const widgetSrc = fs.readFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), 'widget.js'), 'utf8');
-assert(widgetSrc.includes("VERSION = '1.4.0-subagent-isolation-compaction'"), 'widget.js deve ter VERSION = 1.4.0-subagent-isolation-compaction');
-assert(widgetSrc.includes("agy-popover-cost"), 'widget.js deve conter agy-popover-cost');
-assert(widgetSrc.includes("agy-m-cost"), 'widget.js deve conter agy-m-cost');
-assert(widgetSrc.includes("agy-tab-btn-costs"), 'widget.js deve conter agy-tab-btn-costs');
-console.log('  ✓ Teste 5 passou: Integridade estrutural do código de widget.js.');
+assert(widgetSrc.includes("VERSION = '1.5.1'"), 'widget.js must have VERSION = 1.5.1');
+assert(widgetSrc.includes("agy-popover-cost"), 'widget.js must contain agy-popover-cost');
+assert(widgetSrc.includes("agy-m-cost"), 'widget.js must contain agy-m-cost');
+assert(widgetSrc.includes("agy-tab-btn-costs"), 'widget.js must contain agy-tab-btn-costs');
+console.log('  ✓ Test 5 passed: Structural integrity of widget.js.');
 
-console.log('🎉 Todos os testes de unidade passaram com 100% de sucesso!');
+// Test 6: Syntax, exports, and resolution of monitor.mjs
+const monitorSrc = fs.readFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), 'monitor.mjs'), 'utf8');
+assert(monitorSrc.includes('getDevToolsPortFile'), 'monitor.mjs must export getDevToolsPortFile');
+assert(monitorSrc.includes('acquireLock'), 'monitor.mjs must export acquireLock');
+assert(monitorSrc.includes('getExpectedWidgetVersion'), 'monitor.mjs must export getExpectedWidgetVersion');
+
+const { getDevToolsPortFile, getExpectedWidgetVersion } = await import('./monitor.mjs');
+assert.strictEqual(typeof getDevToolsPortFile(), 'string', 'getDevToolsPortFile() must return a path string');
+assert.strictEqual(getExpectedWidgetVersion(), '1.5.1', 'Expected version must be 1.5.1');
+console.log('  ✓ Test 6 passed: Structural integrity and resolution of monitor.mjs.');
+
+console.log('🎉 All unit tests passed with 100% success!');

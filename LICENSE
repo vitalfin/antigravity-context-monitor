@@ -1,0 +1,40 @@
+Business Source License 1.1
+
+Parameters
+
+Licensor: 
+Vitalf Technologies
+
+Licensed Work: 
+Antigravity Context Window Monitor, including all source code, assets, builds, and associated documentation.
+
+Additional Use Grant: 
+You may copy, modify, create derivative works, redistribute, and use the Licensed Work for any internal, non-production, development, testing, research, and non-commercial community purposes, as well as personal daily development use in your local development environment, free of charge.
+
+You may NOT:
+1. Make the Licensed Work available to third parties as a hosted service, software-as-a-service (SaaS), cloud service, or managed service.
+2. Incorporate, bundle, embed, or integrate the Licensed Work (or any substantial portion or derivative work thereof) into any commercial software development platform, commercial IDE, commercial cloud development environment, extension marketplace product, or proprietary developer tool offering without a separate commercial license granted in writing by the Licensor.
+
+Change Date: 
+2028-10-03
+
+Change License: 
+MIT License (as published by the Open Source Initiative)
+
+---
+
+Terms
+
+The Licensor hereby grants you the right to copy, modify, create derivative works, redistribute, and make non-production and permitted production use of the Licensed Work. The foregoing license is personal, non-exclusive, non-sublicensable and non-transferable.
+
+1. Additional Use Grant. You may make those uses of the Licensed Work that are expressly permitted by the Additional Use Grant above.
+
+2. Notice. You must ensure that each copy you make of the Licensed Work includes this text and copyright notice.
+
+3. Change to Change License. Effective on the Change Date, or the fourth anniversary of the first publicly available distribution of a specific version of the Licensed Work under this License, whichever is earlier, the Licensor hereby grants you rights under the terms of the Change License, and the terms of this License are replaced by the terms of the Change License for that version.
+
+4. Commercial Licensing. To obtain a commercial license for uses beyond the Additional Use Grant (including native IDE integration, commercial bundling, or SaaS distribution), contact Vitalf Technologies at: contact@vitalf.in (https://vitalf.in)
+
+5. Intellectual Property. The Licensor reserves all rights not expressly granted to you in this License.
+
+6. Disclaimer. TO THE EXTENT PERMITTED BY APPLICABLE LAW, THE LICENSED WORK IS PROVIDED ON AN "AS IS" BASIS. THE LICENSOR DISCLAIMS ALL WARRANTIES AND CONDITIONS, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NON-INFRINGEMENT. IN NO EVENT SHALL THE LICENSOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.

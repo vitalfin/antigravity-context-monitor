@@ -1,10 +1,11 @@
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import { getDevToolsPortFile } from './monitor.mjs';
 
-const portFile = path.join(os.homedir(), '.config/Antigravity/DevToolsActivePort');
-if (!fs.existsSync(portFile)) {
-  console.error('DevToolsActivePort não encontrado.');
+const portFile = getDevToolsPortFile();
+if (!portFile || !fs.existsSync(portFile)) {
+  console.error('DevToolsActivePort not found.');
   process.exit(1);
 }
 
@@ -16,11 +17,11 @@ const targets = await res.json();
 const pageTarget = targets.find(t => t.type === 'page' && !t.url.includes('devtools'));
 
 if (!pageTarget) {
-  console.error('Nenhum alvo de página do Antigravity encontrado.');
+  console.error('No Antigravity page target found.');
   process.exit(1);
 }
 
-console.log('Conectando ao alvo CDP:', pageTarget.title, pageTarget.url);
+console.log('Connecting to CDP target:', pageTarget.title, pageTarget.url);
 
 const ws = new WebSocket(pageTarget.webSocketDebuggerUrl);
 
@@ -44,7 +45,7 @@ function sendCmd(method, params = {}) {
 
 ws.onopen = async () => {
   try {
-    // 1. Inspeciona a versão injetada e elementos de custo
+    // 1. Inspect injected version and cost elements
     const evalResult = await sendCmd('Runtime.evaluate', {
       expression: `(() => {
         const version = window.__agyWidgetVersion;
@@ -73,9 +74,9 @@ ws.onopen = async () => {
       returnByValue: true
     });
 
-    console.log('🔍 Estado dos Elementos no DOM:', JSON.stringify(evalResult.result.value, null, 2));
+    console.log('🔍 Element State in DOM:', JSON.stringify(evalResult.result.value, null, 2));
 
-    // 2. Simula abertura do modal e clique na aba de Custos & Créditos
+    // 2. Simulate opening modal and clicking Costs & Credits tab
     const tabTest = await sendCmd('Runtime.evaluate', {
       expression: `(() => {
         const tabBtn = document.getElementById('agy-tab-btn-costs');
@@ -88,7 +89,7 @@ ws.onopen = async () => {
           success: true,
           contentHtmlLength: container?.innerHTML?.length || 0,
           hasExplanation: container?.innerHTML?.includes('Google AI Pro'),
-          hasPricingTable: container?.innerHTML?.includes('CATEGORIA DE TOKEN'),
+          hasPricingTable: container?.innerHTML?.includes('CATEGORIA DE TOKEN') || container?.innerHTML?.includes('TOKEN CATEGORY'),
           hasProjections: container?.innerHTML?.includes('Smart Zone (250k tokens)'),
           innerTextPreview: container?.innerText?.slice(0, 300)
         };
@@ -96,9 +97,9 @@ ws.onopen = async () => {
       returnByValue: true
     });
 
-    console.log('💳 Teste da Aba Custos & Créditos:', JSON.stringify(tabTest.result.value, null, 2));
+    console.log('💳 Costs & Credits Tab Test:', JSON.stringify(tabTest.result.value, null, 2));
 
-    // Fecha o modal se tiver ficado aberto
+    // Close modal if left open
     await sendCmd('Runtime.evaluate', {
       expression: `(() => {
         const modal = document.getElementById('agy-context-inspector-modal');
@@ -109,7 +110,7 @@ ws.onopen = async () => {
     ws.close();
     process.exit(0);
   } catch (err) {
-    console.error('Erro durante o teste CDP:', err);
+    console.error('Error during CDP test:', err);
     ws.close();
     process.exit(1);
   }
