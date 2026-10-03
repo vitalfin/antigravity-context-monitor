@@ -1,9 +1,10 @@
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import { getDevToolsPortFile } from './monitor.mjs';
 
-const portFile = path.join(os.homedir(), '.config/Antigravity/DevToolsActivePort');
-if (!fs.existsSync(portFile)) {
+const portFile = getDevToolsPortFile();
+if (!portFile || !fs.existsSync(portFile)) {
   console.error('DevToolsActivePort não encontrado.');
   process.exit(1);
 }

@@ -2,11 +2,12 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import assert from 'assert';
+import { getDevToolsPortFile } from './monitor.mjs';
 
 console.log('🧪 Iniciando Verificação CDP v1.4.0 (Subagent Isolation + Compaction Detection)...');
 
-const portFile = path.join(os.homedir(), '.config/Antigravity/DevToolsActivePort');
-if (!fs.existsSync(portFile)) {
+const portFile = getDevToolsPortFile();
+if (!portFile || !fs.existsSync(portFile)) {
   console.error('DevToolsActivePort não encontrado.');
   process.exit(1);
 }

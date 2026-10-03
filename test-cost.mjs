@@ -100,12 +100,23 @@ assert.strictEqual(formatUSD(0.023), '$0.023');
 assert.strictEqual(formatUSD(1.2345), '$1.23');
 console.log('  ✓ Teste 4 passou: Formatação USD com alta precisão.');
 
-// Teste 5: Verificação de sintaxe de widget.js e monitor.mjs
+// Teste 5: Verificação de sintaxe de widget.js
 const widgetSrc = fs.readFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), 'widget.js'), 'utf8');
 assert(widgetSrc.includes("VERSION = '1.5.0-i18n-opensource'"), 'widget.js deve ter VERSION = 1.5.0-i18n-opensource');
 assert(widgetSrc.includes("agy-popover-cost"), 'widget.js deve conter agy-popover-cost');
 assert(widgetSrc.includes("agy-m-cost"), 'widget.js deve conter agy-m-cost');
 assert(widgetSrc.includes("agy-tab-btn-costs"), 'widget.js deve conter agy-tab-btn-costs');
 console.log('  ✓ Teste 5 passou: Integridade estrutural do código de widget.js.');
+
+// Teste 6: Verificação de sintaxe e funções de monitor.mjs
+const monitorSrc = fs.readFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), 'monitor.mjs'), 'utf8');
+assert(monitorSrc.includes('getDevToolsPortFile'), 'monitor.mjs deve exportar getDevToolsPortFile');
+assert(monitorSrc.includes('acquireLock'), 'monitor.mjs deve exportar acquireLock');
+assert(monitorSrc.includes('getExpectedWidgetVersion'), 'monitor.mjs deve exportar getExpectedWidgetVersion');
+
+const { getDevToolsPortFile, getExpectedWidgetVersion } = await import('./monitor.mjs');
+assert.strictEqual(typeof getDevToolsPortFile(), 'string', 'getDevToolsPortFile() deve retornar um caminho string');
+assert.strictEqual(getExpectedWidgetVersion(), '1.5.0-i18n-opensource', 'Versão esperada deve ser 1.5.0-i18n-opensource');
+console.log('  ✓ Teste 6 passou: Integridade estrutural e resolução de monitor.mjs.');
 
 console.log('🎉 Todos os testes de unidade passaram com 100% de sucesso!');

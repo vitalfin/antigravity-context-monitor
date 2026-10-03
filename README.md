@@ -10,6 +10,8 @@
 [![i18n](https://img.shields.io/badge/i18n-EN%20%7C%20PT%20%7C%20ES%20%7C%20JA%20%7C%20ZH%20%7C%20FR%20%7C%20DE-blueviolet.svg)](#-native-internationalization-7-languages)
 [![Sponsor](https://img.shields.io/badge/Sponsor-Vitalf%20Technologies-ff69b4.svg)](https://github.com/sponsors/vitalfin)
 
+[English](README.md) • [Português](README.pt-BR.md)
+
 <br/>
 
 <img src="assets/modal-inspector.png" alt="Context Window Inspector Modal" width="800" />
@@ -50,7 +52,32 @@ cd antigravity-context-monitor
 npm start
 ```
 
-The daemon automatically detects Antigravity's active CDP port (`~/.config/Antigravity/DevToolsActivePort`) and injects the monitor in real time.
+The daemon automatically detects Antigravity's active CDP port across Linux (`~/.config/Antigravity/DevToolsActivePort`), macOS (`~/Library/Application Support/Antigravity/DevToolsActivePort`), and Windows (`%APPDATA%\Antigravity\DevToolsActivePort`), and injects the monitor in real time.
+
+### 2. Optional: Run as Linux Background Service (systemd)
+
+To keep the monitor running automatically in the background on Linux:
+
+```bash
+mkdir -p ~/.config/systemd/user
+cat << 'EOF' > ~/.config/systemd/user/antigravity-context-monitor.service
+[Unit]
+Description=Antigravity Context Window Monitor (Linux)
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/env node /home/ph/projects/vitalf/code/workspace/antigravity-context-monitor/monitor.mjs
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=default.target
+EOF
+
+systemctl --user daemon-reload
+systemctl --user enable --now antigravity-context-monitor.service
+```
 
 ---
 
