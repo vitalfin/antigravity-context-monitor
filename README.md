@@ -7,7 +7,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/version-1.5.0-emerald.svg)](package.json)
 [![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](package.json)
-[![i18n](https://img.shields.io/badge/i18n-EN%20%7C%20PT%20%7C%20ES%20%7C%20JA%20%7C%20ZH%20%7C%20FR%20%7C%20DE-blueviolet.svg)](#-native-internationalization-7-languages)
+[![i18n](https://img.shields.io/badge/i18n-EN%20%7C%20PT%20%7C%20ES%20%7C%20JA%20%7C%20ZH%20%7C%20FR%20%7C%20DE-blueviolet.svg)](#-key-features)
 [![Sponsor](https://img.shields.io/badge/Sponsor-Vitalf%20Technologies-ff69b4.svg)](https://github.com/sponsors/vitalfin)
 
 <br/>
@@ -57,15 +57,18 @@ The daemon automatically detects Antigravity's active CDP port across Linux (`~/
 To keep the monitor running automatically in the background on Linux:
 
 ```bash
+NODE_BIN=$(node -e 'console.log(process.execPath)')
+MONITOR_PATH=$(pwd)/monitor.mjs
+
 mkdir -p ~/.config/systemd/user
-cat << 'EOF' > ~/.config/systemd/user/antigravity-context-monitor.service
+cat << EOF > ~/.config/systemd/user/antigravity-context-monitor.service
 [Unit]
 Description=Antigravity Context Window Monitor (Linux)
 After=graphical-session.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/env node /home/ph/projects/vitalf/code/workspace/antigravity-context-monitor/monitor.mjs
+ExecStart=${NODE_BIN} ${MONITOR_PATH}
 Restart=always
 RestartSec=3
 
