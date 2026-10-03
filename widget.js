@@ -167,7 +167,7 @@
     "zoneWarnDesc": "Atenção! Degradação perceptível de contexto",
     "zoneDumbTag": "DUMB ZONE ✗",
     "zoneDumbDesc": "Qualidade baixa (risco de degradação/alucinação)",
-    "scopeContextWindow": "CONTEXT WINDOW",
+    "scopeContextWindow": "JANELA DE CONTEXTO",
     "scopeSubagent": "SUBAGENTE",
     "scopeMainConversation": "Conversa Principal",
     "compactionBadgeTitle": "O Antigravity compactou o histórico {count}x para manter a atenção afiada do modelo. Contexto ativo: {tokens}.",
@@ -937,6 +937,15 @@
     return str;
   }
 
+  function isScopeSubagent(data, scopeName) {
+    const sessionSelect = document.getElementById('agy-session-select');
+    if (sessionSelect && sessionSelect.value === 'main') return false;
+    if (data && currentContextData && data.cascadeId === currentContextData.cascadeId) return false;
+    if (scopeName && (scopeName.includes('🤖') || (currentContextData && data && data.cascadeId !== currentContextData.cascadeId))) return true;
+    if (sessionSelect && sessionSelect.value && sessionSelect.value !== 'main') return true;
+    return false;
+  }
+
   function setLocale(newLoc) {
     if (!SUPPORTED_LOCALES[newLoc]) return;
     currentLocale = newLoc;
@@ -952,12 +961,21 @@
     updateStaticLabels();
 
     if (popover && popover.style.display === 'block') {
-      populatePopoverData(currentPopoverData, currentPopoverScope, currentPopoverIsSubagent);
+      const activeSub = getActiveBreadcrumbSubagent();
+      const isSub = currentPopoverIsSubagent || (activeSub && activeSub.details);
+      const scopeTitle = isSub ? ('🤖 ' + t('scopeSubagent') + ': ' + (activeSub?.name || '')) : t('scopeContextWindow');
+      populatePopoverData(currentPopoverData, scopeTitle, isSub);
     }
 
     if (modal && modal.style.display === 'flex') {
-      renderModalWithData(activeModalData, activeModalScope);
+      const isSub = isScopeSubagent(activeModalData, activeModalScope);
+      const sessionSelect = document.getElementById('agy-session-select');
+      const subName = sessionSelect && sessionSelect.value !== 'main' ? (sessionSelect.options[sessionSelect.selectedIndex]?.text?.replace(/^[🤖🌐s]+/, '') || t('scopeSubagent')) : null;
+      const scopeTitle = isSub ? ('🤖 ' + (subName || t('scopeSubagent'))) : t('scopeMainConversation');
+      renderModalWithData(activeModalData, scopeTitle);
     }
+
+    updateAll();
   }
 
   function formatTokens(n) {
@@ -1850,6 +1868,10 @@
     if (el('agy-lbl-scope')) el('agy-lbl-scope').innerText = t('scopeLabel');
     if (el('agy-sponsor-text')) el('agy-sponsor-text').innerText = t('sponsorBtn');
     if (el('agy-modal-sponsor')) el('agy-modal-sponsor').title = t('sponsorTooltip');
+    if (el('agy-btn-popover-sponsor')) el('agy-btn-popover-sponsor').title = t('sponsorTooltip');
+
+    if (el('agy-lang-select')) el('agy-lang-select').title = t('languageLabel');
+    if (el('agy-popover-lang-select')) el('agy-popover-lang-select').title = t('languageLabel');
 
     if (el('agy-lbl-m-active')) el('agy-lbl-m-active').innerText = t('activeConsumption');
     if (el('agy-lbl-m-cache')) el('agy-lbl-m-cache').innerText = t('fastCache');
@@ -1863,10 +1885,28 @@
     if (el('agy-leg-cmds')) el('agy-leg-cmds').innerText = t('legendCmds');
     if (el('agy-leg-dialog')) el('agy-leg-dialog').innerText = t('legendDialogue');
 
+    if (el('agy-bar-sys')) el('agy-bar-sys').title = t('legendSystem');
+    if (el('agy-bar-files')) el('agy-bar-files').title = t('legendFiles');
+    if (el('agy-bar-cmds')) el('agy-bar-cmds').title = t('legendCmds');
+    if (el('agy-bar-dialog')) el('agy-bar-dialog').title = t('legendDialogue');
+
     if (el('agy-tab-btn-overview')) el('agy-tab-btn-overview').innerText = t('tabOverview');
     if (el('agy-tab-btn-costs')) el('agy-tab-btn-costs').innerText = t('tabCosts');
     if (el('agy-tab-btn-tips')) el('agy-tab-btn-tips').innerText = t('tabTips');
+
+    const popLangSelect = el('agy-popover-lang-select');
+    if (popLangSelect && popLangSelect.value !== currentLocale) popLangSelect.value = currentLocale;
+    const modalLangSelect = el('agy-lang-select');
+    if (modalLangSelect && modalLangSelect.value !== currentLocale) modalLangSelect.value = currentLocale;
+
+    const sessionSelect = el('agy-session-select');
+    if (sessionSelect && sessionSelect.options && sessionSelect.options[0]) {
+      sessionSelect.options[0].innerText = t('optMainConversation', { tokens: formatTokens(currentContextData?.totalTokens || 0) });
+    }
   }
+
+  // Inicializa seletores e rótulos estáticos no DOM imediatamente
+  updateStaticLabels();
 
   function closeModal() {
     modal.style.display = 'none';
@@ -1930,10 +1970,8 @@
 
   function renderModalWithData(data, scopeName) {
     activeModalData = data;
-    activeModalScope = scopeName || t('scopeMainConversation');
-
-    const isSubagent = (data && currentContextData && data.cascadeId !== currentContextData.cascadeId) ||
-                       (scopeName && (scopeName.includes('🤖') || scopeName !== t('scopeMainConversation')));
+    const isSubagent = isScopeSubagent(data, scopeName);
+    activeModalScope = scopeName || (isSubagent ? t('scopeSubagent') : t('scopeMainConversation'));
 
     // Alterna a exibição da aba de subagentes (NUNCA mostrar aba subagentes dentro de um subagente!)
     const tabSubBtn = document.getElementById('agy-tab-btn-subagents');
@@ -2087,7 +2125,7 @@
       select.innerHTML = '';
       const mainOpt = document.createElement('option');
       mainOpt.value = 'main';
-      mainOpt.innerText = '🌐 ' + t('scopeMainConversation') + ' (~' + formatTokens(currentContextData?.totalTokens || 0) + ')';
+      mainOpt.innerText = t('optMainConversation', { tokens: formatTokens(currentContextData?.totalTokens || 0) });
       select.appendChild(mainOpt);
 
       latestSubagentsList.forEach(s => {
@@ -2128,8 +2166,7 @@
       return;
     }
 
-    const isSubagent = (data && currentContextData && data.cascadeId !== currentContextData.cascadeId) ||
-                       (activeModalScope && (activeModalScope.includes('🤖') || activeModalScope !== t('scopeMainConversation')));
+    const isSubagent = isScopeSubagent(data, activeModalScope);
 
     if (tab === 'overview') {
       container.innerHTML = `
@@ -2259,17 +2296,17 @@
               <div style="padding: 8px; background: rgba(0,0,0,0.25); border-radius: 6px;">
                 <div style="font-size: 10px; color: var(--muted-foreground, #999);">${t('currentCostCached')}</div>
                 <div style="font-size: 15px; font-weight: 700; color: #22c55e; margin-top: 2px;">${formatUSD(costs.totalCost)}</div>
-                <div style="font-size: 9.5px; color: var(--muted-foreground, #888);">${formatBRL(costs.totalCost)}</div>
+                ${currentLocale === 'pt' ? `<div style="font-size: 9.5px; color: var(--muted-foreground, #888);">${formatBRL(costs.totalCost)}</div>` : ''}
               </div>
               <div style="padding: 8px; background: rgba(0,0,0,0.25); border-radius: 6px;">
                 <div style="font-size: 10px; color: var(--muted-foreground, #999);">${t('withoutCache')}</div>
                 <div style="font-size: 15px; font-weight: 700; color: var(--muted-foreground, #aaa); margin-top: 2px;">${formatUSD(costs.costWithoutCache)}</div>
-                <div style="font-size: 9.5px; color: var(--muted-foreground, #888);">${formatBRL(costs.costWithoutCache)}</div>
+                ${currentLocale === 'pt' ? `<div style="font-size: 9.5px; color: var(--muted-foreground, #888);">${formatBRL(costs.costWithoutCache)}</div>` : ''}
               </div>
               <div style="padding: 8px; background: rgba(34, 197, 94, 0.12); border-radius: 6px; border: 1px solid rgba(34, 197, 94, 0.3);">
                 <div style="font-size: 10px; color: #22c55e; font-weight: 600;">${t('realSavings')}</div>
                 <div style="font-size: 15px; font-weight: 700; color: #22c55e; margin-top: 2px;">-${formatUSD(costs.savedCost)}</div>
-                <div style="font-size: 9.5px; color: #22c55e;">-${formatBRL(costs.savedCost)} ${t('offDiscount', { discount: pricing.cacheDiscountPct })}</div>
+                <div style="font-size: 9.5px; color: #22c55e;">${currentLocale === 'pt' ? `-${formatBRL(costs.savedCost)} ` : ''}${t('offDiscount', { discount: pricing.cacheDiscountPct })}</div>
               </div>
             </div>
           </div>
@@ -2311,12 +2348,12 @@
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px;">
               <div style="padding: 10px; background: rgba(34, 197, 94, 0.08); border-radius: 6px; border-left: 3px solid #22c55e;">
                 <div style="font-weight: 600; color: #22c55e; font-size: 11px;">${t('smartZoneTitle')}</div>
-                <div style="font-size: 16px; font-weight: 700; color: #22c55e; margin: 3px 0;">${formatUSD(projections.smart.totalCost)} <span style="font-size: 10px; font-weight: 400; color: var(--muted-foreground, #aaa);">(${formatBRL(projections.smart.totalCost)})</span></div>
+                <div style="font-size: 16px; font-weight: 700; color: #22c55e; margin: 3px 0;">${formatUSD(projections.smart.totalCost)} ${currentLocale === 'pt' ? `<span style="font-size: 10px; font-weight: 400; color: var(--muted-foreground, #aaa);">(${formatBRL(projections.smart.totalCost)})</span>` : ''}</div>
                 <div style="font-size: 10px; color: var(--muted-foreground, #aaa);">${t('smartZoneDesc')}</div>
               </div>
               <div style="padding: 10px; background: rgba(239, 68, 68, 0.08); border-radius: 6px; border-left: 3px solid #ef4444;">
                 <div style="font-weight: 600; color: #ef4444; font-size: 11px;">${t('dumbZoneTitle')}</div>
-                <div style="font-size: 16px; font-weight: 700; color: #ef4444; margin: 3px 0;">${formatUSD(projections.raw.totalCost)} <span style="font-size: 10px; font-weight: 400; color: var(--muted-foreground, #aaa);">(${formatBRL(projections.raw.totalCost)})</span></div>
+                <div style="font-size: 16px; font-weight: 700; color: #ef4444; margin: 3px 0;">${formatUSD(projections.raw.totalCost)} ${currentLocale === 'pt' ? `<span style="font-size: 10px; font-weight: 400; color: var(--muted-foreground, #aaa);">(${formatBRL(projections.raw.totalCost)})</span>` : ''}</div>
                 <div style="font-size: 10px; color: var(--muted-foreground, #aaa);">${t('dumbZoneDesc')}</div>
               </div>
             </div>
@@ -2579,6 +2616,9 @@
     if (popover.style.display === 'block') {
       populatePopoverData(null, t('scopeContextWindow'), false);
     }
+
+    widget.title = `${t('scopeContextWindow')}: 0 / 250k (0%) — ${t('zoneSmartTag')}`;
+    breadcrumbWidget.title = `${t('scopeContextWindow')}: 0 / 250k (0%) — ${t('zoneSmartTag')}`;
 
     document.querySelectorAll('.agy-subagent-badge').forEach(b => b.remove());
 

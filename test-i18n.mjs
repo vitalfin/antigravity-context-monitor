@@ -89,4 +89,23 @@ assert(defaultLocaleMatch, 'Não foi possível encontrar a inicialização de cu
 assert(widgetSrc.includes("return 'en'") || widgetSrc.includes("defaultLocale = 'en'"), 'Idioma padrão do Antigravity DEVE ser inglês (en)');
 console.log('  ✓ Teste 5 passou: Inglês configurado como idioma padrão do sistema.');
 
+// 6. Teste de Chaves Específicas e Validações de Qualidade
+assert.strictEqual(TRANSLATIONS.pt.scopeContextWindow, 'JANELA DE CONTEXTO', 'scopeContextWindow em PT deve ser JANELA DE CONTEXTO');
+assert.strictEqual(TRANSLATIONS.es.scopeContextWindow, 'VENTANA DE CONTEXTO');
+assert.strictEqual(TRANSLATIONS.fr.scopeContextWindow, 'FENÊTRE DE CONTEXTE');
+assert.strictEqual(TRANSLATIONS.de.scopeContextWindow, 'KONTEXTFENSTER');
+assert.strictEqual(TRANSLATIONS.ja.scopeContextWindow, 'コンテキストウィンドウ');
+assert.strictEqual(TRANSLATIONS.zh.scopeContextWindow, '上下文窗口');
+assert.strictEqual(TRANSLATIONS.en.scopeContextWindow, 'CONTEXT WINDOW');
+
+for (const loc of expectedLocales) {
+  assert(TRANSLATIONS[loc].optMainConversation.includes('{tokens}'), `optMainConversation em ${loc} deve conter {tokens}`);
+  assert(TRANSLATIONS[loc].languageLabel.length > 0, `languageLabel em ${loc} deve ser não-vazio`);
+}
+console.log('  ✓ Teste 6 passou: scopeContextWindow, optMainConversation e languageLabel validados em todos os idiomas.');
+
+// 7. Teste de Lógica de Detecção de Subagente (isScopeSubagent)
+assert(widgetSrc.includes('function isScopeSubagent'), 'widget.js deve implementar a função helper isScopeSubagent');
+console.log('  ✓ Teste 7 passou: isScopeSubagent estruturalmente presente.');
+
 console.log('\n🎉 TODOS OS TESTES UNITÁRIOS DE i18n PASSARAM COM 100% DE SUCESSO!\n');

@@ -275,6 +275,62 @@ ws.onopen = async () => {
     assert.notStrictEqual(iRes.tabSubInMain, 'none', 'Aba Subagentes deve estar visível na conversa principal');
     console.log('  ✓ Teste 4 passou: Isolamento estrito de subagente preservado.');
 
+    // 6. Teste de Troca de Idioma na Conversa Principal (NÃO deve virar subagente)
+    const mainSwitchTest = await sendCmd('Runtime.evaluate', {
+      expression: `(() => {
+        window.__agySetLocale('en');
+        const widget = document.getElementById('agy-context-zone-widget');
+        widget.click();
+        const subTagBefore = document.getElementById('agy-modal-subagent-tag').style.display;
+        const tabSubBtnBefore = document.getElementById('agy-tab-btn-subagents').style.display;
+
+        window.__agySetLocale('pt');
+
+        const subTagAfter = document.getElementById('agy-modal-subagent-tag').style.display;
+        const tabSubBtnAfter = document.getElementById('agy-tab-btn-subagents').style.display;
+
+        window.__agySetLocale('en');
+        document.getElementById('agy-modal-close').click();
+
+        return { subTagBefore, tabSubBtnBefore, subTagAfter, tabSubBtnAfter };
+      })()`,
+      returnByValue: true
+    });
+
+    const mRes = mainSwitchTest.result.value;
+    console.log('🔄 Teste de Alternância de Idioma na Principal:', JSON.stringify(mRes, null, 2));
+    assert.strictEqual(mRes.subTagAfter, 'none', 'Tag subagente NÃO deve aparecer ao trocar idioma na conversa principal');
+    assert.notStrictEqual(mRes.tabSubBtnAfter, 'none', 'Aba de subagentes DEVE continuar visível após trocar idioma');
+    console.log('  ✓ Teste 5 passou: Alternância de idioma na conversa principal não ativa falsamente modo subagente.');
+
+    // 7. Teste de Inicialização com Idioma Salvo no localStorage
+    const startupTest = await sendCmd('Runtime.evaluate', {
+      expression: `(() => {
+        localStorage.setItem('agy_locale', 'pt');
+        window.__agyWidgetVersion = null;
+        ${widgetSrc}
+
+        const popLangSelect = document.getElementById('agy-popover-lang-select');
+        const lblOperational = document.getElementById('agy-lbl-operational')?.innerText;
+        const lblRaw = document.getElementById('agy-lbl-raw')?.innerText;
+
+        localStorage.removeItem('agy_locale');
+        return {
+          popLangSelectVal: popLangSelect?.value,
+          lblOperational,
+          lblRaw
+        };
+      })()`,
+      returnByValue: true
+    });
+
+    const sRes = startupTest.result.value;
+    console.log('💾 Teste de Inicialização via localStorage:', JSON.stringify(sRes, null, 2));
+    assert.strictEqual(sRes.popLangSelectVal, 'pt', 'Seletor do popover deve inicializar com pt');
+    assert.strictEqual(sRes.lblOperational, 'Uso Operacional:', 'Rótulo operacional deve iniciar em português');
+    assert.strictEqual(sRes.lblRaw, 'Capacidade Bruta:', 'Rótulo de capacidade deve iniciar em português');
+    console.log('  ✓ Teste 6 passou: Idioma salvo em localStorage inicializa perfeitamente popover e seletores.');
+
     console.log('\n🎉 TODOS OS TESTES CDP v1.5.0 PASSARAM COM 100% DE SUCESSO!\n');
     ws.close();
     process.exit(0);

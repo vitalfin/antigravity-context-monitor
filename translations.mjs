@@ -136,7 +136,7 @@ const TRANSLATIONS = {
     zoneWarnDesc: 'Atenção! Degradação perceptível de contexto',
     zoneDumbTag: 'DUMB ZONE ✗',
     zoneDumbDesc: 'Qualidade baixa (risco de degradação/alucinação)',
-    scopeContextWindow: 'CONTEXT WINDOW',
+    scopeContextWindow: 'JANELA DE CONTEXTO',
     scopeSubagent: 'SUBAGENTE',
     scopeMainConversation: 'Conversa Principal',
     compactionBadgeTitle: 'O Antigravity compactou o histórico {count}x para manter a atenção afiada do modelo. Contexto ativo: {tokens}.',
