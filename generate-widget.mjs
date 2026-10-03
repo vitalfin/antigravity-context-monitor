@@ -1,4 +1,8 @@
-(() => {
+import fs from 'fs';
+import path from 'path';
+import { TRANSLATIONS } from './translations.mjs';
+
+const widgetJsContent = `(() => {
   const WIDGET_ID = 'agy-context-zone-widget';
   const BREADCRUMB_WIDGET_ID = 'agy-breadcrumb-context-widget';
   const MODAL_ID = 'agy-context-inspector-modal';
@@ -33,890 +37,7 @@
     de: { name: 'Deutsch', flag: '🇩🇪', short: 'DE' }
   };
 
-  const TRANSLATIONS = {
-  "en": {
-    "zoneSmartTag": "SMART ZONE ✓",
-    "zoneSmartDesc": "High quality (accurate, sharp responses)",
-    "zoneWarnTag": "WARNING ! Degrading",
-    "zoneWarnDesc": "Warning! Noticeable context degradation",
-    "zoneDumbTag": "DUMB ZONE ✗",
-    "zoneDumbDesc": "Low quality (risk of hallucination / context loss)",
-    "scopeContextWindow": "CONTEXT WINDOW",
-    "scopeSubagent": "SUBAGENT",
-    "scopeMainConversation": "Main Conversation",
-    "compactionBadgeTitle": "Antigravity automatically compacted chat history {count}x to maintain sharp model attention. Active context: {tokens}.",
-    "operationalUsage": "Operational Usage:",
-    "rawCapacity": "Raw Capacity:",
-    "cleanContext": "Clean context",
-    "contextDistribution": "Context Distribution",
-    "cacheBadge": "⚡ Cache: {pct}%",
-    "cacheTooltip": "{tokens} tokens in fast cache",
-    "estCost": "💰 Est. Cost:",
-    "savings": "Saved:",
-    "savingsTooltip": "Real cache savings: {usd}",
-    "tagSystem": "🧠 System: {val}",
-    "tagFiles": "📄 Files: {val}",
-    "tagCmds": "💻 Outputs: {val}",
-    "readyForTasks": "Ready for tasks.",
-    "balancedConsumption": "Balanced consumption",
-    "subagentsIsolated": "Subagents (Isolated)",
-    "subagentsHint": "Independent contexts (do not count toward main):",
-    "btnInspect": "🔍 Inspect Full Context",
-    "modalTitle": "Context Window Inspector",
-    "modalSubagentTag": "🤖 SUBAGENT",
-    "modalCompactedTag": "COMPACTED ({count}x)",
-    "modalCompactedTooltip": "Antigravity performed {count} automatic compaction(s) of history in this session to preserve model attention.",
-    "scopeLabel": "Scope:",
-    "optMainConversation": "🌐 Main Conversation (~{tokens})",
-    "activeConsumption": "Active Consumption",
-    "ofSmartLimit": "{pct}% of smart limit",
-    "fastCache": "Fast Cache",
-    "inFastCache": "{pct}% in fast cache",
-    "estCostApi": "Est. Cost (API)",
-    "cacheSavingsDesc": "{discount}% savings via Cache (-{usd})",
-    "cacheSavingsTooltip": "Real calculated savings: {usd}",
-    "filesInContext": "Files in Context",
-    "filesCountUnit": "{count} files",
-    "estTokens": "~{tokens} tokens",
-    "commandOutputs": "Command Outputs",
-    "cmdsCountUnit": "{count} cmds",
-    "loadDistribution": "Visual Load Distribution",
-    "rawRatioText": "{tokens} / 1.0M ({pct}% raw capacity)",
-    "legendSystem": "System & Rules",
-    "legendFiles": "Injected Files",
-    "legendCmds": "Terminal Commands",
-    "legendDialogue": "Dialogue History",
-    "tabOverview": "Overview",
-    "tabCosts": "💳 Costs & Credits",
-    "tabFiles": "Files ({count})",
-    "tabCommands": "Commands ({count})",
-    "tabSubagents": "Subagents ({count})",
-    "tabTips": "Best Practices",
-    "emptyTitle": "New Conversation — Clean Context",
-    "emptyDesc": "No messages or tools executed in this session yet. Context consumption begins as soon as you send your first message.",
-    "subagentBannerTitle": "Isolated Subagent Context",
-    "subagentBannerDesc": "This subagent operates in its own independent process. The file reads and commands below belong exclusively to it and <strong>do not burden the Main Conversation's context window</strong>.",
-    "backToMainBtn": "⬅ Main Conversation",
-    "compactionBannerTitle": "History Compacted by Antigravity ({count}x)",
-    "compactionNormal": "Normal",
-    "compactionBannerDesc": "Upon reaching the operational threshold (~250k–270k tokens), Antigravity summarizes prior conversation into a checkpoint to preserve attention and prevent hallucinations. <strong>The displayed value ({tokens}) represents active post-compaction context.</strong>",
-    "categoryBreakdownTitle": "Breakdown by Load Category",
-    "totalActiveTokens": "Active Total: {tokens} tokens",
-    "cardSystemTitle": "🧠 System & Rules (~{tokens})",
-    "cardSystemDesc": "Base prompt, workspace guidelines (AGENTS.md, rules), and MCP definitions.",
-    "cardFilesTitle": "📄 Files in Context (~{tokens})",
-    "cardFilesDesc": "{count} files read directly in session via view_file.",
-    "cardCmdsTitle": "💻 Command Outputs (~{tokens})",
-    "cardCmdsDesc": "{count} bash commands executed and retained in history.",
-    "cardDialogueTitle": "💬 Dialogue & Reasoning (~{tokens})",
-    "cardDialogueDesc": "User prompts, model replies, and thought chains.",
-    "topConsumersTitle": "Top Context Consumers",
-    "viewAllBtn": "View all ({count})",
-    "noFilesYet": "No files read yet.",
-    "pricingCalloutTitle": "Google AI Pro Plan (Subscription quota with no per-token fee)",
-    "pricingCalloutDesc": "This estimate reflects market rates via <strong>{provider}</strong> for <strong>{model}</strong>. If you use Gemini Pro / Antigravity with included quota, your direct marginal cost is $0.00 up to your quota limit.",
-    "cachingEfficiencyTitle": "⚡ Gemini Context Caching Efficiency",
-    "inFastCacheTag": "{pct}% in Fast Cache",
-    "currentCostCached": "Current Cost with Cache",
-    "withoutCache": "Without Cache (Full Rate)",
-    "realSavings": "Net Cost Savings",
-    "offDiscount": "(-{discount}% off)",
-    "refPricingTitle": "Reference Pricing ({model})",
-    "colCategory": "TOKEN CATEGORY",
-    "colQuantity": "QUANTITY",
-    "colRate": "RATE / 1M",
-    "colEstTotal": "ESTIMATED TOTAL",
-    "rowCached": "⚡ Cached Input (Cache Read)",
-    "rowUncached": "📥 Uncached Input (Prompt Tokens)",
-    "rowOutput": "📤 Output / Generation (Output Tokens)",
-    "projectionsTitle": "Cost Projection by Operating Window",
-    "smartZoneTitle": "Smart Zone (250k tokens)",
-    "smartZoneDesc": "Peak reasoning accuracy, zero hallucination, and ultra-fast response times.",
-    "dumbZoneTitle": "Dumb Zone / Physical Limit (1.0M tokens)",
-    "dumbZoneDesc": "Higher latency and progressive attention decay. Starting a new chat is strongly recommended.",
-    "noFilesSession": "No files have been read into context in this session so far.",
-    "colFileName": "FILE",
-    "colFileSize": "SIZE",
-    "colFileTokens": "EST. TOKENS",
-    "colFileReads": "READS",
-    "noCommandsSession": "No commands have been executed in this session.",
-    "colCommand": "COMMAND",
-    "colOutput": "OUTPUT",
-    "noSubagentsSession": "No subagents have been created in this session.",
-    "subagentsGuaranteeTitle": "Context Isolation Guarantee",
-    "subagentsGuaranteeDesc": "Each subagent operates with its own dedicated context window. The token consumption below is exclusive to each subagent and <strong>is NOT added to the Main Conversation</strong>.",
-    "subagentsClickHint": "Click any subagent below to inspect its read files, commands, and metrics:",
-    "currentlySelected": "Currently Selected",
-    "subagentCardDetails": "Tokens: <strong style=\"color: {color};\">{tokens}</strong> ({pct}% of Smart Zone) • {files} files • {cmds} commands",
-    "btnInspectArrow": "Inspect ↗",
-    "tip1Title": "🎯 Why stay in the Smart Zone (< 250k tokens)?",
-    "tip1Desc": "While 1M+ models accept massive context, fine-grained detail retention and reasoning precision are vastly superior under 250k tokens. Above this threshold (\"Warning\" and \"Dumb Zone\"), \"needle in a haystack\" degradation can occur. When reaching ~250k, Antigravity automatically triggers compaction to keep context sharp.",
-    "tip2Title": "✂️ How to keep context lean",
-    "tip2Item1": "Prefer viewing specific line ranges (StartLine and EndLine) instead of reading entire files with thousands of lines.",
-    "tip2Item2": "Avoid terminal commands that generate huge outputs (pipe to grep, head, or tail).",
-    "tip2Item3": "Delegate heavy or long-running tasks to <strong>Subagents</strong> — they operate in isolated context and keep the main chat clean.",
-    "tip2Item4": "When completing a milestone or changing topics, start a <strong>New Conversation</strong> with 100% fresh context.",
-    "sponsorBtn": "💖 Sponsor",
-    "sponsorTooltip": "Support Vitalf open-source tools on GitHub Sponsors",
-    "languageLabel": "Language:"
-  },
-  "pt": {
-    "zoneSmartTag": "SMART ZONE ✓",
-    "zoneSmartDesc": "Qualidade alta (respostas precisas)",
-    "zoneWarnTag": "ATENÇÃO ! Degrada",
-    "zoneWarnDesc": "Atenção! Degradação perceptível de contexto",
-    "zoneDumbTag": "DUMB ZONE ✗",
-    "zoneDumbDesc": "Qualidade baixa (risco de degradação/alucinação)",
-    "scopeContextWindow": "CONTEXT WINDOW",
-    "scopeSubagent": "SUBAGENTE",
-    "scopeMainConversation": "Conversa Principal",
-    "compactionBadgeTitle": "O Antigravity compactou o histórico {count}x para manter a atenção afiada do modelo. Contexto ativo: {tokens}.",
-    "operationalUsage": "Uso Operacional:",
-    "rawCapacity": "Capacidade Bruta:",
-    "cleanContext": "Contexto limpo",
-    "contextDistribution": "Distribuição de Contexto",
-    "cacheBadge": "⚡ Cache: {pct}%",
-    "cacheTooltip": "{tokens} tokens em cache rápido",
-    "estCost": "💰 Custo Est.:",
-    "savings": "Economia:",
-    "savingsTooltip": "Economia real via cache: {usd}",
-    "tagSystem": "🧠 Sistema: {val}",
-    "tagFiles": "📄 Arquivos: {val}",
-    "tagCmds": "💻 Saídas: {val}",
-    "readyForTasks": "Pronto para tarefas.",
-    "balancedConsumption": "Consumo equilibrado",
-    "subagentsIsolated": "Subagentes (Isolados)",
-    "subagentsHint": "Contextos independentes (não somam na principal):",
-    "btnInspect": "🔍 Inspecionar Contexto Completo",
-    "modalTitle": "Context Window Inspector",
-    "modalSubagentTag": "🤖 SUBAGENTE",
-    "modalCompactedTag": "COMPACTADO ({count}x)",
-    "modalCompactedTooltip": "O Antigravity realizou {count} compactação(ões) automática(s) de histórico nesta sessão para manter a atenção afiada do modelo.",
-    "scopeLabel": "Escopo:",
-    "optMainConversation": "🌐 Conversa Principal (~{tokens})",
-    "activeConsumption": "Consumo Ativo",
-    "ofSmartLimit": "{pct}% do limite inteligente",
-    "fastCache": "Gemini Cache",
-    "inFastCache": "{pct}% em cache rápido",
-    "estCostApi": "Custo Estimado (API)",
-    "cacheSavingsDesc": "Economia de {discount}% via Cache (-{usd})",
-    "cacheSavingsTooltip": "Economia real calculada: {usd}",
-    "filesInContext": "Arquivos em Contexto",
-    "filesCountUnit": "{count} arq",
-    "estTokens": "~{tokens} tokens",
-    "commandOutputs": "Saídas de Comandos",
-    "cmdsCountUnit": "{count} cmds",
-    "loadDistribution": "Distribuição Visual de Carga",
-    "rawRatioText": "{tokens} / 1.0M ({pct}% capacidade física)",
-    "legendSystem": "Sistema & Regras",
-    "legendFiles": "Arquivos Injetados",
-    "legendCmds": "Comandos de Terminal",
-    "legendDialogue": "Histórico de Diálogo",
-    "tabOverview": "Visão Geral",
-    "tabCosts": "💳 Custos & Créditos",
-    "tabFiles": "Arquivos ({count})",
-    "tabCommands": "Comandos ({count})",
-    "tabSubagents": "Subagentes ({count})",
-    "tabTips": "Boas Práticas",
-    "emptyTitle": "Nova Conversa — Contexto Limpo",
-    "emptyDesc": "Ainda não há mensagens ou ferramentas executadas nesta sessão. O contexto começará a ser consumido assim que você enviar a primeira mensagem.",
-    "subagentBannerTitle": "Contexto Isolado de Subagente",
-    "subagentBannerDesc": "Este subagente opera em seu próprio processo independente. As leituras e comandos abaixo pertencem exclusivamente a ele e <strong>não pesam na context window da Conversa Principal</strong>.",
-    "backToMainBtn": "⬅ Conversa Principal",
-    "compactionBannerTitle": "Histórico Compactado pelo Antigravity ({count}x)",
-    "compactionNormal": "Normal",
-    "compactionBannerDesc": "Ao atingir o limite operacional (~250k–270k tokens), o Antigravity resume a conversa anterior em um checkpoint para evitar perda de atenção e alucinações. <strong>O valor exibido ({tokens}) representa o contexto ativo pós-compactação.</strong>",
-    "categoryBreakdownTitle": "Detalhamento por Categoria de Carga",
-    "totalActiveTokens": "Total Ativo: {tokens} tokens",
-    "cardSystemTitle": "🧠 Sistema & Regras (~{tokens})",
-    "cardSystemDesc": "Prompt base, diretrizes de workspace (AGENTS.md, regras) e definições MCP.",
-    "cardFilesTitle": "📄 Arquivos em Contexto (~{tokens})",
-    "cardFilesDesc": "{count} arquivos lidos diretamente na sessão via view_file.",
-    "cardCmdsTitle": "💻 Saídas de Comandos (~{tokens})",
-    "cardCmdsDesc": "{count} comandos bash executados e suas saídas mantidas no histórico.",
-    "cardDialogueTitle": "💬 Diálogo & Raciocínio (~{tokens})",
-    "cardDialogueDesc": "Prompts do usuário, respostas do modelo e cadeias de pensamento.",
-    "topConsumersTitle": "Principais Consumidores de Contexto",
-    "viewAllBtn": "Ver todos ({count})",
-    "noFilesYet": "Nenhum arquivo lido ainda.",
-    "pricingCalloutTitle": "Plano Google AI Pro (cota de assinatura sem custo adicional por token)",
-    "pricingCalloutDesc": "Esta estimativa reflete o valor de mercado via <strong>{provider}</strong> para o modelo <strong>{model}</strong>. Se você usa o plano Gemini Pro / Antigravity com cota inclusa, seu custo marginal direto é R$ 0,00 até o limite da sua cota.",
-    "cachingEfficiencyTitle": "⚡ Eficiência do Gemini Context Caching",
-    "inFastCacheTag": "{pct}% em Cache Rápido",
-    "currentCostCached": "Custo Atual com Cache",
-    "withoutCache": "Sem Cache (Tarifa Cheia)",
-    "realSavings": "Economia Real Obtida",
-    "offDiscount": "({discount}% off)",
-    "refPricingTitle": "Tarifas de Referência ({model})",
-    "colCategory": "CATEGORIA DE TOKEN",
-    "colQuantity": "QUANTIDADE",
-    "colRate": "TARIFA / 1M",
-    "colEstTotal": "TOTAL ESTIMADO",
-    "rowCached": "⚡ Entrada em Cache (Cache Read)",
-    "rowUncached": "📥 Entrada sem Cache (Prompt Tokens)",
-    "rowOutput": "📤 Saída / Geração (Output Tokens)",
-    "projectionsTitle": "Projeção de Custo por Janela de Operação",
-    "smartZoneTitle": "Smart Zone (250k tokens)",
-    "smartZoneDesc": "Máxima precisão de raciocínio, sem alucinação e com tempo de resposta ultrarrápido.",
-    "dumbZoneTitle": "Dumb Zone / Limite Físico (1.0M tokens)",
-    "dumbZoneDesc": "Aumento de latência e degradação atencional progressiva. Recomendado reiniciar conversa.",
-    "noFilesSession": "Nenhum arquivo foi lido para o contexto nesta sessão até o momento.",
-    "colFileName": "ARQUIVO",
-    "colFileSize": "TAMANHO",
-    "colFileTokens": "TOKENS EST.",
-    "colFileReads": "LEITURAS",
-    "noCommandsSession": "Nenhum comando foi executado nesta sessão.",
-    "colCommand": "COMANDO",
-    "colOutput": "OUTPUT",
-    "noSubagentsSession": "Nenhum subagente foi criado a partir desta sessão.",
-    "subagentsGuaranteeTitle": "Garantia de Isolamento de Contexto",
-    "subagentsGuaranteeDesc": "Cada subagente opera com uma context window própria. O consumo de tokens mostrado em cada card abaixo é exclusivo do respectivo subagente e <strong>NÃO é somado à context window da Conversa Principal</strong>.",
-    "subagentsClickHint": "Clique em qualquer subagente abaixo para inspecionar seus arquivos lidos, comandos e métricas:",
-    "currentlySelected": "Atualmente Selecionado",
-    "subagentCardDetails": "Tokens: <strong style=\"color: {color};\">{tokens}</strong> ({pct}% da Smart Zone) • {files} arquivos • {cmds} comandos",
-    "btnInspectArrow": "Inspecionar ↗",
-    "tip1Title": "🎯 Por que manter na Smart Zone (< 250k tokens)?",
-    "tip1Desc": "Modelos de 1M+ suportam contextos massivos, mas a retenção de detalhes finos e a precisão do raciocínio são significativamente superiores até 250k tokens. Acima desse patamar (\"Atenção\" e \"Dumb Zone\"), pode ocorrer degradação atencional (\"needle in a haystack\"). Ao atingir ~250k, o Antigravity pode executar uma compactação automática para proteger o contexto.",
-    "tip2Title": "✂️ Como manter o contexto leve",
-    "tip2Item1": "Prefira ler apenas fatias de arquivos com StartLine e EndLine em vez de arquivos inteiros de milhares de linhas.",
-    "tip2Item2": "Evite comandos de terminal com saídas gigantescas desnecessárias (use grep, head, tail).",
-    "tip2Item3": "Delegue tarefas pesadas para <strong>Subagentes</strong> — eles rodam em contexto isolado e não sobrecarregam a conversa principal.",
-    "tip2Item4": "Ao concluir um objetivo ou mudar de assunto, inicie uma <strong>Nova Conversa</strong> com contexto 100% renovado.",
-    "sponsorBtn": "💖 Apoiar",
-    "sponsorTooltip": "Apoie as ferramentas open-source da Vitalf no GitHub Sponsors",
-    "languageLabel": "Idioma:"
-  },
-  "es": {
-    "zoneSmartTag": "ZONA INTELIGENTE ✓",
-    "zoneSmartDesc": "Alta calidad (respuestas precisas)",
-    "zoneWarnTag": "¡ATENCIÓN! Degrada",
-    "zoneWarnDesc": "¡Atención! Degradación perceptible del contexto",
-    "zoneDumbTag": "ZONA DEGRADADA ✗",
-    "zoneDumbDesc": "Baja calidad (riesgo de alucinación/pérdida)",
-    "scopeContextWindow": "VENTANA DE CONTEXTO",
-    "scopeSubagent": "SUBAGENTE",
-    "scopeMainConversation": "Conversación Principal",
-    "compactionBadgeTitle": "Antigravity compactó automáticamente el historial {count}x para mantener la atención del modelo. Contexto activo: {tokens}.",
-    "operationalUsage": "Uso Operativo:",
-    "rawCapacity": "Capacidad Bruta:",
-    "cleanContext": "Contexto limpio",
-    "contextDistribution": "Distribución del Contexto",
-    "cacheBadge": "⚡ Caché: {pct}%",
-    "cacheTooltip": "{tokens} tokens en caché rápida",
-    "estCost": "💰 Coste Est.:",
-    "savings": "Ahorro:",
-    "savingsTooltip": "Ahorro real por caché: {usd}",
-    "tagSystem": "🧠 Sistema: {val}",
-    "tagFiles": "📄 Archivos: {val}",
-    "tagCmds": "💻 Salidas: {val}",
-    "readyForTasks": "Listo para tareas.",
-    "balancedConsumption": "Consumo equilibrado",
-    "subagentsIsolated": "Subagentes (Aislados)",
-    "subagentsHint": "Contextos independientes (no suman a la principal):",
-    "btnInspect": "🔍 Inspeccionar Contexto Completo",
-    "modalTitle": "Inspector de Ventana de Contexto",
-    "modalSubagentTag": "🤖 SUBAGENTE",
-    "modalCompactedTag": "COMPACTADO ({count}x)",
-    "modalCompactedTooltip": "Antigravity realizó {count} compactación(es) automática(s) del historial en esta sesión para mantener la atención del modelo.",
-    "scopeLabel": "Ámbito:",
-    "optMainConversation": "🌐 Conversación Principal (~{tokens})",
-    "activeConsumption": "Consumo Activo",
-    "ofSmartLimit": "{pct}% del límite inteligente",
-    "fastCache": "Caché Rápida",
-    "inFastCache": "{pct}% en caché rápida",
-    "estCostApi": "Coste Estimado (API)",
-    "cacheSavingsDesc": "Ahorro del {discount}% vía Caché (-{usd})",
-    "cacheSavingsTooltip": "Ahorro real calculado: {usd}",
-    "filesInContext": "Archivos en Contexto",
-    "filesCountUnit": "{count} arch",
-    "estTokens": "~{tokens} tokens",
-    "commandOutputs": "Salidas de Comandos",
-    "cmdsCountUnit": "{count} cmds",
-    "loadDistribution": "Distribución Visual de Carga",
-    "rawRatioText": "{tokens} / 1.0M ({pct}% capacidad física)",
-    "legendSystem": "Sistema y Reglas",
-    "legendFiles": "Archivos Inyectados",
-    "legendCmds": "Comandos de Terminal",
-    "legendDialogue": "Historial de Diálogo",
-    "tabOverview": "Visión General",
-    "tabCosts": "💳 Costes y Créditos",
-    "tabFiles": "Archivos ({count})",
-    "tabCommands": "Comandos ({count})",
-    "tabSubagents": "Subagentes ({count})",
-    "tabTips": "Buenas Prácticas",
-    "emptyTitle": "Nueva Conversación — Contexto Limpio",
-    "emptyDesc": "Aún no hay mensajes ni herramientas ejecutadas en esta sesión. El consumo de contexto comenzará en cuanto envíes tu primer mensaje.",
-    "subagentBannerTitle": "Contexto Aislado de Subagente",
-    "subagentBannerDesc": "Este subagente opera en su propio proceso independiente. Las lecturas y comandos a continuación le pertenecen exclusivamente y <strong>no cargan la ventana de contexto de la Conversación Principal</strong>.",
-    "backToMainBtn": "⬅ Conversación Principal",
-    "compactionBannerTitle": "Historial Compactado por Antigravity ({count}x)",
-    "compactionNormal": "Normal",
-    "compactionBannerDesc": "Al alcanzar el límite operativo (~250k–270k tokens), Antigravity resume la conversación anterior en un punto de control para evitar pérdida de atención y alucinaciones. <strong>El valor mostrado ({tokens}) representa el contexto activo post-compactación.</strong>",
-    "categoryBreakdownTitle": "Desglose por Categoría de Carga",
-    "totalActiveTokens": "Total Activo: {tokens} tokens",
-    "cardSystemTitle": "🧠 Sistema y Reglas (~{tokens})",
-    "cardSystemDesc": "Prompt base, directrices del espacio de trabajo (AGENTS.md, reglas) y definiciones MCP.",
-    "cardFilesTitle": "📄 Archivos en Contexto (~{tokens})",
-    "cardFilesDesc": "{count} archivos leídos directamente en la sesión vía view_file.",
-    "cardCmdsTitle": "💻 Salidas de Comandos (~{tokens})",
-    "cardCmdsDesc": "{count} comandos bash ejecutados y sus salidas conservadas en el historial.",
-    "cardDialogueTitle": "💬 Diálogo y Razonamiento (~{tokens})",
-    "cardDialogueDesc": "Prompts de usuario, respuestas del modelo y cadenas de pensamiento.",
-    "topConsumersTitle": "Principales Consumidores de Contexto",
-    "viewAllBtn": "Ver todos ({count})",
-    "noFilesYet": "Aún no se han leído archivos.",
-    "pricingCalloutTitle": "Plan Google AI Pro (Cuota de suscripción sin coste por token)",
-    "pricingCalloutDesc": "Esta estimación refleja el valor de mercado vía <strong>{provider}</strong> para el modelo <strong>{model}</strong>. Si utilizas Gemini Pro / Antigravity con cuota incluida, tu coste marginal directo es $0.00 hasta agotar tu cuota.",
-    "cachingEfficiencyTitle": "⚡ Eficiencia de Gemini Context Caching",
-    "inFastCacheTag": "{pct}% en Caché Rápida",
-    "currentCostCached": "Coste Actual con Caché",
-    "withoutCache": "Sin Caché (Tarifa Completa)",
-    "realSavings": "Ahorro Real Obtenido",
-    "offDiscount": "(-{discount}% dto)",
-    "refPricingTitle": "Tarifas de Referencia ({model})",
-    "colCategory": "CATEGORÍA DE TOKEN",
-    "colQuantity": "CANTIDAD",
-    "colRate": "TARIFA / 1M",
-    "colEstTotal": "TOTAL ESTIMADO",
-    "rowCached": "⚡ Entrada en Caché (Cache Read)",
-    "rowUncached": "📥 Entrada sin Caché (Prompt Tokens)",
-    "rowOutput": "📤 Salida / Generación (Output Tokens)",
-    "projectionsTitle": "Proyección de Coste por Ventana de Operación",
-    "smartZoneTitle": "Smart Zone (250k tokens)",
-    "smartZoneDesc": "Máxima precisión de razonamiento, sin alucinaciones y tiempo de respuesta ultrarrápido.",
-    "dumbZoneTitle": "Dumb Zone / Límite Físico (1.0M tokens)",
-    "dumbZoneDesc": "Aumento de latencia y degradación atencional progresiva. Se recomienda reiniciar la conversación.",
-    "noFilesSession": "No se ha leído ningún archivo para el contexto en esta sesión hasta el momento.",
-    "colFileName": "ARCHIVO",
-    "colFileSize": "TAMAÑO",
-    "colFileTokens": "TOKENS EST.",
-    "colFileReads": "LECTURAS",
-    "noCommandsSession": "No se ha ejecutado ningún comando en esta sesión.",
-    "colCommand": "COMANDO",
-    "colOutput": "SALIDA",
-    "noSubagentsSession": "No se ha creado ningún subagente a partir de esta sesión.",
-    "subagentsGuaranteeTitle": "Garantía de Aislamiento de Contexto",
-    "subagentsGuaranteeDesc": "Cada subagente opera con su propia ventana de contexto. El consumo de tokens mostrado abajo es exclusivo de cada uno y <strong>NO se suma a la Conversación Principal</strong>.",
-    "subagentsClickHint": "Haz clic en cualquier subagente abajo para inspeccionar sus archivos, comandos y métricas:",
-    "currentlySelected": "Seleccionado Actualmente",
-    "subagentCardDetails": "Tokens: <strong style=\"color: {color};\">{tokens}</strong> ({pct}% de Smart Zone) • {files} archivos • {cmds} comandos",
-    "btnInspectArrow": "Inspeccionar ↗",
-    "tip1Title": "🎯 ¿Por qué mantenerse en la Smart Zone (< 250k tokens)?",
-    "tip1Desc": "Aunque los modelos de 1M+ admiten contextos enormes, la retención de detalles y la precisión del razonamiento son muy superiores por debajo de 250k tokens. Por encima de este umbral (\"Atención\" y \"Zona Degradada\"), puede ocurrir degradación atencional (\"aguja en un pajar\"). Al alcanzar ~250k, Antigravity puede compactar automáticamente.",
-    "tip2Title": "✂️ Cómo mantener el contexto ligero",
-    "tip2Item1": "Prefiere leer solo fragmentos de archivos con StartLine y EndLine en lugar de archivos enteros de miles de líneas.",
-    "tip2Item2": "Evita comandos de terminal con salidas descomunales e innecesarias (utiliza grep, head, tail).",
-    "tip2Item3": "Delega tareas complejas a <strong>Subagentes</strong>: operan en contexto aislado y no sobrecargan la conversación principal.",
-    "tip2Item4": "Al finalizar un objetivo o cambiar de tema, inicia una <strong>Nueva Conversación</strong> con contexto 100% renovado.",
-    "sponsorBtn": "💖 Patrocinar",
-    "sponsorTooltip": "Apoya las herramientas de código abierto de Vitalf en GitHub Sponsors",
-    "languageLabel": "Idioma:"
-  },
-  "ja": {
-    "zoneSmartTag": "スマートゾーン ✓",
-    "zoneSmartDesc": "高品質（高精度な応答）",
-    "zoneWarnTag": "警告！性能低下",
-    "zoneWarnDesc": "警告！コンテキストの明らかな低下",
-    "zoneDumbTag": "ダムゾーン ✗",
-    "zoneDumbDesc": "低品質（ハルシネーション・忘却のリスク）",
-    "scopeContextWindow": "コンテキストウィンドウ",
-    "scopeSubagent": "サブエージェント",
-    "scopeMainConversation": "メイン会話",
-    "compactionBadgeTitle": "Antigravityはモデルの注意力を維持するため履歴を自動で{count}回圧縮しました。有効コンテキスト: {tokens}。",
-    "operationalUsage": "運用利用量:",
-    "rawCapacity": "物理容量:",
-    "cleanContext": "クリーンなコンテキスト",
-    "contextDistribution": "コンテキストの内訳",
-    "cacheBadge": "⚡ キャッシュ: {pct}%",
-    "cacheTooltip": "高速キャッシュ内 {tokens} トークン",
-    "estCost": "💰 推定コスト:",
-    "savings": "削減額:",
-    "savingsTooltip": "キャッシュによる実質削減額: {usd}",
-    "tagSystem": "🧠 システム: {val}",
-    "tagFiles": "📄 ファイル: {val}",
-    "tagCmds": "💻 出力: {val}",
-    "readyForTasks": "タスクの準備完了。",
-    "balancedConsumption": "バランスのとれた消費",
-    "subagentsIsolated": "サブエージェント（分離）",
-    "subagentsHint": "独立コンテキスト（メインセッションには加算されません）:",
-    "btnInspect": "🔍 詳細コンテキストの確認",
-    "modalTitle": "コンテキストウィンドウ・インスペクター",
-    "modalSubagentTag": "🤖 サブエージェント",
-    "modalCompactedTag": "圧縮済み ({count}x)",
-    "modalCompactedTooltip": "Antigravityはモデルの注意力を維持するため、このセッションで履歴の自動圧縮を{count}回実行しました。",
-    "scopeLabel": "対象スコープ:",
-    "optMainConversation": "🌐 メイン会話 (~{tokens})",
-    "activeConsumption": "アクティブ消費量",
-    "ofSmartLimit": "スマート上限の {pct}%",
-    "fastCache": "高速キャッシュ",
-    "inFastCache": "高速キャッシュ内 {pct}%",
-    "estCostApi": "推定コスト (API)",
-    "cacheSavingsDesc": "キャッシュにより{discount}%削減 (-{usd})",
-    "cacheSavingsTooltip": "算出された実質削減額: {usd}",
-    "filesInContext": "コンテキスト内ファイル",
-    "filesCountUnit": "{count} 件",
-    "estTokens": "約 {tokens} トークン",
-    "commandOutputs": "コマンド出力",
-    "cmdsCountUnit": "{count} 回",
-    "loadDistribution": "視覚的な負荷分布",
-    "rawRatioText": "{tokens} / 1.0M ({pct}% 物理容量)",
-    "legendSystem": "システム＆ルール",
-    "legendFiles": "読み込みファイル",
-    "legendCmds": "ターミナルコマンド",
-    "legendDialogue": "対話履歴",
-    "tabOverview": "概要",
-    "tabCosts": "💳 コスト＆クレジット",
-    "tabFiles": "ファイル ({count})",
-    "tabCommands": "コマンド ({count})",
-    "tabSubagents": "サブエージェント ({count})",
-    "tabTips": "ベストプラクティス",
-    "emptyTitle": "新しい会話 — クリーンなコンテキスト",
-    "emptyDesc": "このセッションではまだメッセージやツールの実行はありません。最初のメッセージを送信するとコンテキストの消費が開始されます。",
-    "subagentBannerTitle": "分離されたサブエージェントのコンテキスト",
-    "subagentBannerDesc": "このサブエージェントは独立した独自プロセスで動作します。以下のファイル読み込みやコマンドはこれ専用であり、<strong>メイン会話のコンテキストウィンドウを消費しません</strong>。",
-    "backToMainBtn": "⬅ メイン会話",
-    "compactionBannerTitle": "Antigravityによる履歴圧縮 ({count}x)",
-    "compactionNormal": "正常",
-    "compactionBannerDesc": "運用上限（約250k〜270kトークン）に達すると、Antigravityは注意力の低下や幻覚を防ぐために以前の会話を要約チェックポイントにまとめます。<strong>表示値（{tokens}）は圧縮後の有効コンテキストを表しています。</strong>",
-    "categoryBreakdownTitle": "負荷カテゴリ別詳細",
-    "totalActiveTokens": "有効合計: {tokens} トークン",
-    "cardSystemTitle": "🧠 システム＆ルール (~{tokens})",
-    "cardSystemDesc": "基本プロンプト、ワークスペースガイドライン（AGENTS.md、ルール）、MCP定義。",
-    "cardFilesTitle": "📄 コンテキスト内ファイル (~{tokens})",
-    "cardFilesDesc": "view_file経由でセッション中に直接読み込まれた {count} 件のファイル。",
-    "cardCmdsTitle": "💻 コマンド出力 (~{tokens})",
-    "cardCmdsDesc": "実行され履歴に保持されている {count} 回のbashコマンド出力。",
-    "cardDialogueTitle": "💬 対話＆推論 (~{tokens})",
-    "cardDialogueDesc": "ユーザープロンプト、モデル応答、および思考プロセス。",
-    "topConsumersTitle": "コンテキストの主な消費項目",
-    "viewAllBtn": "すべて表示 ({count})",
-    "noFilesYet": "まだ読み込まれたファイルはありません。",
-    "pricingCalloutTitle": "Google AI Pro プラン（トークン従量課金なしのサブスクリプション枠）",
-    "pricingCalloutDesc": "この見積もりは <strong>{provider}</strong> による <strong>{model}</strong> の市場標準価格を反映しています。割り当て枠付きのGemini Pro / Antigravityをご利用の場合、枠内での直接限界費用は $0.00 です。",
-    "cachingEfficiencyTitle": "⚡ Geminiコンテキストキャッシュの効率",
-    "inFastCacheTag": "高速キャッシュ率 {pct}%",
-    "currentCostCached": "キャッシュ適用後コスト",
-    "withoutCache": "キャッシュなし（定価）",
-    "realSavings": "実質削減コスト",
-    "offDiscount": "({discount}% オフ)",
-    "refPricingTitle": "基準料金 ({model})",
-    "colCategory": "トークン分類",
-    "colQuantity": "数量",
-    "colRate": "単価 / 100万",
-    "colEstTotal": "推定合計",
-    "rowCached": "⚡ キャッシュ入力 (Cache Read)",
-    "rowUncached": "📥 未キャッシュ入力 (Prompt Tokens)",
-    "rowOutput": "📤 出力 / 生成 (Output Tokens)",
-    "projectionsTitle": "動作ウィンドウ別コスト予測",
-    "smartZoneTitle": "スマートゾーン (250k トークン)",
-    "smartZoneDesc": "最高の推論精度、幻覚ゼロ、そして超高速な応答速度。",
-    "dumbZoneTitle": "ダムゾーン / 物理的上限 (1.0M トークン)",
-    "dumbZoneDesc": "遅延の増大と段階的な注意力の低下。会話を新規作成することを強くお勧めします。",
-    "noFilesSession": "このセッションではコンテキストに読み込まれたファイルはまだありません。",
-    "colFileName": "ファイル名",
-    "colFileSize": "サイズ",
-    "colFileTokens": "推定トークン",
-    "colFileReads": "読込回数",
-    "noCommandsSession": "このセッションではコマンドが実行されていません。",
-    "colCommand": "コマンド",
-    "colOutput": "出力サイズ",
-    "noSubagentsSession": "このセッションから作成されたサブエージェントはありません。",
-    "subagentsGuaranteeTitle": "コンテキスト完全分離の保証",
-    "subagentsGuaranteeDesc": "各サブエージェントは専用のコンテキストウィンドウで動作します。以下のトークン消費は各サブエージェント独自のものであり、<strong>メイン会話には一切加算されません</strong>。",
-    "subagentsClickHint": "以下のサブエージェントをクリックしてファイル・コマンド・メトリクスを確認:",
-    "currentlySelected": "選択中",
-    "subagentCardDetails": "トークン: <strong style=\"color: {color};\">{tokens}</strong> (スマートゾーンの {pct}%) • {files} ファイル • {cmds} コマンド",
-    "btnInspectArrow": "確認 ↗",
-    "tip1Title": "🎯 なぜスマートゾーン（250kトークン未満）に保つべきなのか？",
-    "tip1Desc": "100万以上のモデルは膨大なコンテキストをサポートしていますが、250k未満の方が詳細の保持力と推論の精度が圧倒的に優れています。これを超えると注意力の低下が生じやすくなります。約250kに達するとAntigravityは自動圧縮を行ってコンテキストを保護します。",
-    "tip2Title": "✂️ コンテキストをスリムに保つ方法",
-    "tip2Item1": "数千行のファイル全体を読み込むのではなく、StartLineとEndLineで必要な部分だけを読み込むようにしてください。",
-    "tip2Item2": "不要に長大な出力となるターミナルコマンドを避け、grep、head、tailなどを活用してください。",
-    "tip2Item3": "重いタスクは<strong>サブエージェント</strong>に委託してください — 独立したコンテキストで動作しメイン会話を圧迫しません。",
-    "tip2Item4": "目標が完了したり話題を切り替える際は、<strong>新しい会話</strong>を開始してコンテキストを100%リフレッシュしてください。",
-    "sponsorBtn": "💖 スポンサー",
-    "sponsorTooltip": "GitHub SponsorsでVitalfのオープンソース開発を支援",
-    "languageLabel": "言語:"
-  },
-  "zh": {
-    "zoneSmartTag": "智能区间 ✓",
-    "zoneSmartDesc": "高质量（精准回答）",
-    "zoneWarnTag": "注意！性能衰减",
-    "zoneWarnDesc": "注意！上下文出现明显衰减",
-    "zoneDumbTag": "迟钝区间 ✗",
-    "zoneDumbDesc": "低质量（存在幻觉与遗忘风险）",
-    "scopeContextWindow": "上下文窗口",
-    "scopeSubagent": "子智能体",
-    "scopeMainConversation": "主会话",
-    "compactionBadgeTitle": "Antigravity 已自动压缩历史记录 {count} 次，以保持模型的敏锐注意力。活跃上下文: {tokens}。",
-    "operationalUsage": "运行用量:",
-    "rawCapacity": "原始容量:",
-    "cleanContext": "空白上下文",
-    "contextDistribution": "上下文分布",
-    "cacheBadge": "⚡ 缓存: {pct}%",
-    "cacheTooltip": "快速缓存中的 {tokens} 个 token",
-    "estCost": "💰 预估费用:",
-    "savings": "节省:",
-    "savingsTooltip": "缓存带来的实际节省: {usd}",
-    "tagSystem": "🧠 系统: {val}",
-    "tagFiles": "📄 文件: {val}",
-    "tagCmds": "💻 输出: {val}",
-    "readyForTasks": "准备就绪。",
-    "balancedConsumption": "消耗均衡",
-    "subagentsIsolated": "子智能体（独立隔离）",
-    "subagentsHint": "独立上下文（不占用主会话窗口）:",
-    "btnInspect": "🔍 查看完整上下文详情",
-    "modalTitle": "上下文窗口检查器",
-    "modalSubagentTag": "🤖 子智能体",
-    "modalCompactedTag": "已压缩 ({count}x)",
-    "modalCompactedTooltip": "Antigravity 在此会话中执行了 {count} 次自动历史压缩，以保持模型的敏锐注意力。",
-    "scopeLabel": "作用域:",
-    "optMainConversation": "🌐 主会话 (~{tokens})",
-    "activeConsumption": "活跃用量",
-    "ofSmartLimit": "智能上限的 {pct}%",
-    "fastCache": "快速缓存",
-    "inFastCache": "快速缓存中 {pct}%",
-    "estCostApi": "预估费用 (API)",
-    "cacheSavingsDesc": "通过缓存节省 {discount}% (-{usd})",
-    "cacheSavingsTooltip": "计算得出的实际节省额: {usd}",
-    "filesInContext": "上下文内文件",
-    "filesCountUnit": "{count} 个文件",
-    "estTokens": "约 {tokens} token",
-    "commandOutputs": "命令输出",
-    "cmdsCountUnit": "{count} 次",
-    "loadDistribution": "负载可视化分布",
-    "rawRatioText": "{tokens} / 1.0M ({pct}% 物理容量)",
-    "legendSystem": "系统与规则",
-    "legendFiles": "载入文件",
-    "legendCmds": "终端命令",
-    "legendDialogue": "对话历史",
-    "tabOverview": "概览",
-    "tabCosts": "💳 费用与额度",
-    "tabFiles": "文件 ({count})",
-    "tabCommands": "命令 ({count})",
-    "tabSubagents": "子智能体 ({count})",
-    "tabTips": "最佳实践",
-    "emptyTitle": "新对话 — 上下文干净",
-    "emptyDesc": "此会话中尚未执行任何消息或工具。发送第一条消息后将开始占用上下文。",
-    "subagentBannerTitle": "子智能体独立上下文",
-    "subagentBannerDesc": "该子智能体在独立的进程中运行。下列文件读取与命令仅属于该智能体，<strong>不会增加主会话的上下文窗口负担</strong>。",
-    "backToMainBtn": "⬅ 主会话",
-    "compactionBannerTitle": "Antigravity 已压缩历史 ({count}x)",
-    "compactionNormal": "正常",
-    "compactionBannerDesc": "当达到运行上限（约 250k–270k token）时，Antigravity 会将之前的对话汇总为一个检查点，以避免注意力衰减与幻觉。<strong>显示的值（{tokens}）代表压缩后的活跃上下文。</strong>",
-    "categoryBreakdownTitle": "负载分类明细",
-    "totalActiveTokens": "当前活跃总量: {tokens} token",
-    "cardSystemTitle": "🧠 系统与规则 (~{tokens})",
-    "cardSystemDesc": "基础系统提示词、工作区规范（AGENTS.md、规则）和 MCP 定义。",
-    "cardFilesTitle": "📄 上下文内文件 (~{tokens})",
-    "cardFilesDesc": "会话中通过 view_file 直接读取的 {count} 个文件。",
-    "cardCmdsTitle": "💻 命令输出 (~{tokens})",
-    "cardCmdsDesc": "执行并在历史中保留输出的 {count} 个 bash 命令。",
-    "cardDialogueTitle": "💬 对话与思考 (~{tokens})",
-    "cardDialogueDesc": "用户输入、模型回答以及内部思考链条。",
-    "topConsumersTitle": "主要上下文消耗来源",
-    "viewAllBtn": "查看全部 ({count})",
-    "noFilesYet": "尚未读取任何文件。",
-    "pricingCalloutTitle": "Google AI Pro 计划（包含订阅额度，无需按 token 额外付费）",
-    "pricingCalloutDesc": "此预估基于 <strong>{provider}</strong> 针对 <strong>{model}</strong> 的公开市场费率。若使用包含额度的 Gemini Pro / Antigravity，在额度限制内直接边际费用为 $0.00。",
-    "cachingEfficiencyTitle": "⚡ Gemini 上下文缓存效率",
-    "inFastCacheTag": "快速缓存率 {pct}%",
-    "currentCostCached": "当前实际费用（带缓存）",
-    "withoutCache": "无缓存（全额单价）",
-    "realSavings": "实际节省金额",
-    "offDiscount": "（省 {discount}%）",
-    "refPricingTitle": "参考计费标准 ({model})",
-    "colCategory": "TOKEN 类别",
-    "colQuantity": "数量",
-    "colRate": "单价 / 百万",
-    "colEstTotal": "预估小计",
-    "rowCached": "⚡ 缓存输入 (Cache Read)",
-    "rowUncached": "📥 未缓存输入 (Prompt Tokens)",
-    "rowOutput": "📤 输出 / 生成 (Output Tokens)",
-    "projectionsTitle": "各运行区间的成本预估",
-    "smartZoneTitle": "智能区间 (250k token)",
-    "smartZoneDesc": "极致推理精度，无幻觉，毫秒级极速响应。",
-    "dumbZoneTitle": "迟钝区间 / 物理上限 (1.0M token)",
-    "dumbZoneDesc": "延迟增加并伴随渐进式注意力衰退。强烈建议开启新对话。",
-    "noFilesSession": "截至目前，此会话尚未读取任何文件。",
-    "colFileName": "文件名",
-    "colFileSize": "大小",
-    "colFileTokens": "预估 TOKEN",
-    "colFileReads": "读取次数",
-    "noCommandsSession": "此会话中尚未执行任何命令。",
-    "colCommand": "执行命令",
-    "colOutput": "输出大小",
-    "noSubagentsSession": "此会话中未派生任何子智能体。",
-    "subagentsGuaranteeTitle": "上下文隔离保障",
-    "subagentsGuaranteeDesc": "每个子智能体都在独立的上下文窗口中运行。下方显示的 token 消耗为子智能体独有，<strong>绝不会叠加到主会话中</strong>。",
-    "subagentsClickHint": "点击下方任意子智能体，即可检查其读取的文件、命令与各项指标:",
-    "currentlySelected": "当前已选中",
-    "subagentCardDetails": "Tokens: <strong style=\"color: {color};\">{tokens}</strong> (智能区间的 {pct}%) • {files} 个文件 • {cmds} 个命令",
-    "btnInspectArrow": "检查 ↗",
-    "tip1Title": "🎯 为什么要保持在智能区间（< 250k token）？",
-    "tip1Desc": "尽管 1M+ 模型支持海量上下文，但在 250k token 以内，细节保留与逻辑推理精度显著更高。超出该区间（“注意”和“迟钝区间”）时可能出现大海捞针式的注意力衰减。达到约 250k 时，Antigravity 会自动触发压缩以保护上下文。",
-    "tip2Title": "✂️ 如何保持上下文精简",
-    "tip2Item1": "优先使用 StartLine 和 EndLine 读取文件切片，避免一次性载入成千上万行的完整文件。",
-    "tip2Item2": "避免在终端中运行产生海量无用输出的命令（善用 grep、head、tail 过滤）。",
-    "tip2Item3": "将繁重任务委派给<strong>子智能体</strong> — 它们在隔离的上下文中执行，不会挤占主会话空间。",
-    "tip2Item4": "完成阶段目标或切换话题时，开启<strong>新对话</strong>以获得 100% 全新的上下文。",
-    "sponsorBtn": "💖 赞助项目",
-    "sponsorTooltip": "在 GitHub Sponsors 上支持 Vitalf 开源工具开发",
-    "languageLabel": "语言:"
-  },
-  "fr": {
-    "zoneSmartTag": "ZONE INTELLIGENTE ✓",
-    "zoneSmartDesc": "Haute qualité (réponses précises)",
-    "zoneWarnTag": "ATTENTION ! Dégradation",
-    "zoneWarnDesc": "Attention ! Dégradation perceptible du contexte",
-    "zoneDumbTag": "ZONE LENTE ✗",
-    "zoneDumbDesc": "Basse qualité (risque d'hallucination/perte)",
-    "scopeContextWindow": "FENÊTRE DE CONTEXTE",
-    "scopeSubagent": "SOUS-AGENT",
-    "scopeMainConversation": "Conversation Principale",
-    "compactionBadgeTitle": "Antigravity a automatiquement compacté l'historique {count}x pour maintenir l'attention du modèle. Contexte actif : {tokens}.",
-    "operationalUsage": "Utilisation Opérationnelle :",
-    "rawCapacity": "Capacité Brute :",
-    "cleanContext": "Contexte propre",
-    "contextDistribution": "Distribution du Contexte",
-    "cacheBadge": "⚡ Cache : {pct}%",
-    "cacheTooltip": "{tokens} tokens en cache rapide",
-    "estCost": "💰 Coût Est. :",
-    "savings": "Économie :",
-    "savingsTooltip": "Économie réelle grâce au cache : {usd}",
-    "tagSystem": "🧠 Système : {val}",
-    "tagFiles": "📄 Fichiers : {val}",
-    "tagCmds": "💻 Sorties : {val}",
-    "readyForTasks": "Prêt pour les tâches.",
-    "balancedConsumption": "Consommation équilibrée",
-    "subagentsIsolated": "Sous-agents (Isolés)",
-    "subagentsHint": "Contextes indépendants (ne s'ajoutent pas au principal) :",
-    "btnInspect": "🔍 Inspecter le Contexte Complet",
-    "modalTitle": "Inspecteur de Fenêtre de Contexte",
-    "modalSubagentTag": "🤖 SOUS-AGENT",
-    "modalCompactedTag": "COMPACTÉ ({count}x)",
-    "modalCompactedTooltip": "Antigravity a effectué {count} compactage(s) automatique(s) de l'historique dans cette session pour maintenir l'attention du modèle.",
-    "scopeLabel": "Portée :",
-    "optMainConversation": "🌐 Conversation Principale (~{tokens})",
-    "activeConsumption": "Consommation Active",
-    "ofSmartLimit": "{pct}% de la limite intelligente",
-    "fastCache": "Cache Rapide",
-    "inFastCache": "{pct}% en cache rapide",
-    "estCostApi": "Coût Estimé (API)",
-    "cacheSavingsDesc": "Économie de {discount}% via Cache (-{usd})",
-    "cacheSavingsTooltip": "Économie réelle calculée : {usd}",
-    "filesInContext": "Fichiers en Contexte",
-    "filesCountUnit": "{count} fich",
-    "estTokens": "~{tokens} tokens",
-    "commandOutputs": "Sorties de Commandes",
-    "cmdsCountUnit": "{count} cmds",
-    "loadDistribution": "Distribution Visuelle de la Charge",
-    "rawRatioText": "{tokens} / 1.0M ({pct}% capacité physique)",
-    "legendSystem": "Système & Règles",
-    "legendFiles": "Fichiers Injectés",
-    "legendCmds": "Commandes Terminal",
-    "legendDialogue": "Historique de Dialogue",
-    "tabOverview": "Vue d'ensemble",
-    "tabCosts": "💳 Coûts & Crédits",
-    "tabFiles": "Fichiers ({count})",
-    "tabCommands": "Commandes ({count})",
-    "tabSubagents": "Sous-agents ({count})",
-    "tabTips": "Bonnes Pratiques",
-    "emptyTitle": "Nouvelle conversation — Contexte propre",
-    "emptyDesc": "Aucun message ou outil exécuté dans cette session pour l'instant. La consommation du contexte débutera dès l'envoi du premier message.",
-    "subagentBannerTitle": "Contexte Isolé de Sous-agent",
-    "subagentBannerDesc": "Ce sous-agent opère dans son propre processus indépendant. Les lectures et commandes ci-dessous lui appartiennent exclusivement et <strong>ne pèsent pas sur la fenêtre de contexte de la Conversation Principale</strong>.",
-    "backToMainBtn": "⬅ Conversation Principale",
-    "compactionBannerTitle": "Historique compacté par Antigravity ({count}x)",
-    "compactionNormal": "Normal",
-    "compactionBannerDesc": "En atteignant le seuil opérationnel (~250k–270k tokens), Antigravity résume la conversation précédente dans un point de contrôle pour préserver l'attention et éviter les hallucinations. <strong>La valeur affichée ({tokens}) représente le contexte actif après compactage.</strong>",
-    "categoryBreakdownTitle": "Détail par Catégorie de Charge",
-    "totalActiveTokens": "Total Actif : {tokens} tokens",
-    "cardSystemTitle": "🧠 Système & Règles (~{tokens})",
-    "cardSystemDesc": "Prompt de base, directives d'espace de travail (AGENTS.md, règles) et définitions MCP.",
-    "cardFilesTitle": "📄 Fichiers en Contexte (~{tokens})",
-    "cardFilesDesc": "{count} fichiers lus directement au cours de la session via view_file.",
-    "cardCmdsTitle": "💻 Sorties de Commandes (~{tokens})",
-    "cardCmdsDesc": "{count} commandes bash exécutées et leurs sorties conservées dans l'historique.",
-    "cardDialogueTitle": "💬 Dialogue & Raisonnement (~{tokens})",
-    "cardDialogueDesc": "Invites utilisateur, réponses du modèle et chaînes de pensée.",
-    "topConsumersTitle": "Principaux Consommateurs de Contexte",
-    "viewAllBtn": "Voir tous ({count})",
-    "noFilesYet": "Aucun fichier lu pour l'instant.",
-    "pricingCalloutTitle": "Forfait Google AI Pro (Quota d'abonnement sans frais par token)",
-    "pricingCalloutDesc": "Cette estimation reflète les tarifs de marché via <strong>{provider}</strong> pour le modèle <strong>{model}</strong>. Si vous utilisez Gemini Pro / Antigravity avec quota inclus, votre coût marginal direct est de $0.00 dans la limite de votre quota.",
-    "cachingEfficiencyTitle": "⚡ Efficacité du Gemini Context Caching",
-    "inFastCacheTag": "{pct}% en Cache Rapide",
-    "currentCostCached": "Coût actuel avec cache",
-    "withoutCache": "Sans cache (Plein tarif)",
-    "realSavings": "Économie réelle obtenue",
-    "offDiscount": "(-{discount}% de réd.)",
-    "refPricingTitle": "Tarifs de référence ({model})",
-    "colCategory": "CATÉGORIE DE TOKEN",
-    "colQuantity": "QUANTITÉ",
-    "colRate": "TARIF / 1M",
-    "colEstTotal": "TOTAL ESTIMÉ",
-    "rowCached": "⚡ Entrée en cache (Lecture cache)",
-    "rowUncached": "📥 Entrée non cachée (Tokens de prompt)",
-    "rowOutput": "📤 Sortie / Génération (Tokens de sortie)",
-    "projectionsTitle": "Projection des coûts par fenêtre d'opération",
-    "smartZoneTitle": "Zone Intelligente (250k tokens)",
-    "smartZoneDesc": "Précision maximale de raisonnement, zéro hallucination et temps de réponse ultra-rapides.",
-    "dumbZoneTitle": "Zone Lente / Limite Physique (1.0M tokens)",
-    "dumbZoneDesc": "Augmentation de la latence et dégradation progressive de l'attention. Nouveau chat fortement recommandé.",
-    "noFilesSession": "Aucun fichier n'a été lu dans le contexte pour l'instant au cours de cette session.",
-    "colFileName": "FICHIER",
-    "colFileSize": "TAILLE",
-    "colFileTokens": "TOKENS EST.",
-    "colFileReads": "LECTURES",
-    "noCommandsSession": "Aucune commande n'a été exécutée dans cette session.",
-    "colCommand": "COMMANDE",
-    "colOutput": "SORTIE",
-    "noSubagentsSession": "Aucun sous-agent n'a été créé depuis cette session.",
-    "subagentsGuaranteeTitle": "Garantie d'Isolation de Contexte",
-    "subagentsGuaranteeDesc": "Chaque sous-agent opère avec sa propre fenêtre de contexte. La consommation de tokens ci-dessous est exclusive et <strong>N'EST PAS ajoutée à la Conversation Principale</strong>.",
-    "subagentsClickHint": "Cliquez sur un sous-agent ci-dessous pour inspecter ses fichiers lus, commandes et métriques :",
-    "currentlySelected": "Actuellement Sélectionné",
-    "subagentCardDetails": "Tokens : <strong style=\"color: {color};\">{tokens}</strong> ({pct}% de Zone Intelligente) • {files} fichiers • {cmds} commandes",
-    "btnInspectArrow": "Inspecter ↗",
-    "tip1Title": "🎯 Pourquoi rester dans la Zone Intelligente (< 250k tokens) ?",
-    "tip1Desc": "Bien que les modèles 1M+ gèrent d'immenses contextes, la rétention des détails et la précision du raisonnement sont nettement supérieures sous 250k tokens. Au-delà, une dégradation attentionnelle peut survenir. À environ 250k, Antigravity exécute un compactage automatique.",
-    "tip2Title": "✂️ Comment garder un contexte léger",
-    "tip2Item1": "Préférez lire des portions spécifiques de fichiers avec StartLine et EndLine plutôt que des fichiers entiers de milliers de lignes.",
-    "tip2Item2": "Évitez les commandes terminal générant d'immenses sorties inutiles (utilisez grep, head, tail).",
-    "tip2Item3": "Déléguez les tâches lourdes à des <strong>Sous-agents</strong> — ils s'exécutent en contexte isolé sans surcharger la conversation principale.",
-    "tip2Item4": "Lorsque vous terminez un objectif ou changez de sujet, démarrez une <strong>Nouvelle Conversation</strong> avec un contexte 100% neuf.",
-    "sponsorBtn": "💖 Sponsoriser",
-    "sponsorTooltip": "Soutenez les outils open-source de Vitalf sur GitHub Sponsors",
-    "languageLabel": "Langue :"
-  },
-  "de": {
-    "zoneSmartTag": "SMART-ZONE ✓",
-    "zoneSmartDesc": "Hohe Qualität (präzise Antworten)",
-    "zoneWarnTag": "ACHTUNG ! Leistungsabfall",
-    "zoneWarnDesc": "Achtung! Spürbare Kontextdegradation",
-    "zoneDumbTag": "DUMB-ZONE ✗",
-    "zoneDumbDesc": "Niedrige Qualität (Halluzinationsrisiko)",
-    "scopeContextWindow": "KONTEXTFENSTER",
-    "scopeSubagent": "SUBAGENT",
-    "scopeMainConversation": "Hauptunterhaltung",
-    "compactionBadgeTitle": "Antigravity hat den Verlauf {count}x automatisch komprimiert, um die Modellaufmerksamkeit hochzuhalten. Aktiver Kontext: {tokens}.",
-    "operationalUsage": "Operative Auslastung:",
-    "rawCapacity": "Rohe Kapazität:",
-    "cleanContext": "Sauberer Kontext",
-    "contextDistribution": "Kontextverteilung",
-    "cacheBadge": "⚡ Cache: {pct}%",
-    "cacheTooltip": "{tokens} Tokens im Schnell-Cache",
-    "estCost": "💰 Gesch. Kosten:",
-    "savings": "Ersparnis:",
-    "savingsTooltip": "Tatsächliche Ersparnis durch Cache: {usd}",
-    "tagSystem": "🧠 System: {val}",
-    "tagFiles": "📄 Dateien: {val}",
-    "tagCmds": "💻 Ausgaben: {val}",
-    "readyForTasks": "Bereit für Aufgaben.",
-    "balancedConsumption": "Ausgewogener Verbrauch",
-    "subagentsIsolated": "Subagenten (Isoliert)",
-    "subagentsHint": "Unabhängige Kontexte (zählen nicht zum Hauptkontext):",
-    "btnInspect": "🔍 Vollständigen Kontext prüfen",
-    "modalTitle": "Kontextfenster-Inspektor",
-    "modalSubagentTag": "🤖 SUBAGENT",
-    "modalCompactedTag": "KOMPRIMIERT ({count}x)",
-    "modalCompactedTooltip": "Antigravity hat in dieser Sitzung {count} automatische Verlaufs-Komprimierung(en) durchgeführt, um die Modellaufmerksamkeit zu wahren.",
-    "scopeLabel": "Geltungsbereich:",
-    "optMainConversation": "🌐 Hauptunterhaltung (~{tokens})",
-    "activeConsumption": "Aktiver Verbrauch",
-    "ofSmartLimit": "{pct}% des Smart-Limits",
-    "fastCache": "Schnell-Cache",
-    "inFastCache": "{pct}% im Schnell-Cache",
-    "estCostApi": "Geschätzte Kosten (API)",
-    "cacheSavingsDesc": "{discount}% Ersparnis durch Cache (-{usd})",
-    "cacheSavingsTooltip": "Berechnete reale Ersparnis: {usd}",
-    "filesInContext": "Dateien im Kontext",
-    "filesCountUnit": "{count} Dat.",
-    "estTokens": "~{tokens} Tokens",
-    "commandOutputs": "Befehlsausgaben",
-    "cmdsCountUnit": "{count} Befehle",
-    "loadDistribution": "Visuelle Lastverteilung",
-    "rawRatioText": "{tokens} / 1.0M ({pct}% physische Kapazität)",
-    "legendSystem": "System & Regeln",
-    "legendFiles": "Geladene Dateien",
-    "legendCmds": "Terminalbefehle",
-    "legendDialogue": "Dialogverlauf",
-    "tabOverview": "Übersicht",
-    "tabCosts": "💳 Kosten & Guthaben",
-    "tabFiles": "Dateien ({count})",
-    "tabCommands": "Befehle ({count})",
-    "tabSubagents": "Subagenten ({count})",
-    "tabTips": "Best Practices",
-    "emptyTitle": "Neue Unterhaltung — Sauberer Kontext",
-    "emptyDesc": "In dieser Sitzung wurden noch keine Nachrichten oder Tools ausgeführt. Der Kontextverbrauch beginnt mit Ihrer ersten Nachricht.",
-    "subagentBannerTitle": "Isolierter Subagenten-Kontext",
-    "subagentBannerDesc": "Dieser Subagent arbeitet in einem eigenen, unabhängigen Prozess. Die unten aufgeführten Dateien und Befehle gehören ausschließlich zu ihm und <strong>belasten nicht das Kontextfenster der Hauptunterhaltung</strong>.",
-    "backToMainBtn": "⬅ Hauptunterhaltung",
-    "compactionBannerTitle": "Verlauf durch Antigravity komprimiert ({count}x)",
-    "compactionNormal": "Normal",
-    "compactionBannerDesc": "Beim Erreichen des operativen Limits (~250k–270k Tokens) fasst Antigravity die bisherige Unterhaltung in einem Checkpoint zusammen, um Aufmerksamkeitsverlust und Halluzinationen zu verhindern. <strong>Der angezeigte Wert ({tokens}) stellt den aktiven Kontext nach der Komprimierung dar.</strong>",
-    "categoryBreakdownTitle": "Aufschlüsselung nach Lastkategorie",
-    "totalActiveTokens": "Aktive Summe: {tokens} Tokens",
-    "cardSystemTitle": "🧠 System & Regeln (~{tokens})",
-    "cardSystemDesc": "Basis-Prompt, Workspace-Richtlinien (AGENTS.md, Regeln) und MCP-Definitionen.",
-    "cardFilesTitle": "📄 Dateien im Kontext (~{tokens})",
-    "cardFilesDesc": "{count} Dateien direkt in der Sitzung über view_file gelesen.",
-    "cardCmdsTitle": "💻 Befehlsausgaben (~{tokens})",
-    "cardCmdsDesc": "{count} Bash-Befehle ausgeführt und im Verlauf aufbewahrt.",
-    "cardDialogueTitle": "💬 Dialog & Argumentation (~{tokens})",
-    "cardDialogueDesc": "Benutzerprompts, Modellantworten und Gedankengänge.",
-    "topConsumersTitle": "Größte Kontextverbraucher",
-    "viewAllBtn": "Alle anzeigen ({count})",
-    "noFilesYet": "Noch keine Dateien gelesen.",
-    "pricingCalloutTitle": "Google AI Pro Plan (Abonnement-Kontingent ohne zusätzliche Token-Gebühr)",
-    "pricingCalloutDesc": "Diese Schätzung spiegelt die Marktpreise via <strong>{provider}</strong> für <strong>{model}</strong> wider. Wenn Sie Gemini Pro / Antigravity mit inkludiertem Kontingent nutzen, betragen Ihre direkten Grenzkosten bis zum Kontingentlimit $0,00.",
-    "cachingEfficiencyTitle": "⚡ Effizienz des Gemini-Kontext-Cachings",
-    "inFastCacheTag": "{pct}% im Schnell-Cache",
-    "currentCostCached": "Aktuelle Kosten mit Cache",
-    "withoutCache": "Ohne Cache (Voller Tarif)",
-    "realSavings": "Erzielte Netto-Ersparnis",
-    "offDiscount": "(-{discount}% Rabatt)",
-    "refPricingTitle": "Referenztarife ({model})",
-    "colCategory": "TOKEN-KATEGORIE",
-    "colQuantity": "MENGE",
-    "colRate": "TARIF / 1M",
-    "colEstTotal": "GESCHÄTZTES TOTAL",
-    "rowCached": "⚡ Gecachter Input (Cache-Read)",
-    "rowUncached": "📥 Ungecachter Input (Prompt-Tokens)",
-    "rowOutput": "📤 Ausgabe / Generierung (Output-Tokens)",
-    "projectionsTitle": "Kostenprojektion nach Betriebsfenster",
-    "smartZoneTitle": "Smart-Zone (250k Tokens)",
-    "smartZoneDesc": "Höchste Denkpräzision, keine Halluzinationen und ultraschnelle Antwortzeiten.",
-    "dumbZoneTitle": "Dumb-Zone / Physisches Limit (1.0M Tokens)",
-    "dumbZoneDesc": "Erhöhte Latenz und fortschreitender Aufmerksamkeitsverlust. Ein neuer Chat wird dringend empfohlen.",
-    "noFilesSession": "Bisher wurden in dieser Sitzung keine Dateien in den Kontext geladen.",
-    "colFileName": "DATEI",
-    "colFileSize": "GRÖSSE",
-    "colFileTokens": "GESCH. TOKENS",
-    "colFileReads": "LESUNGEN",
-    "noCommandsSession": "In dieser Sitzung wurden keine Befehle ausgeführt.",
-    "colCommand": "BEFEHL",
-    "colOutput": "AUSGABE",
-    "noSubagentsSession": "In dieser Sitzung wurden keine Subagenten erzeugt.",
-    "subagentsGuaranteeTitle": "Garantie der Kontextisolierung",
-    "subagentsGuaranteeDesc": "Jeder Subagent arbeitet mit einem eigenen Kontextfenster. Der unten angezeigte Token-Verbrauch gehört exklusiv zu ihm und <strong>wird NICHT zur Hauptunterhaltung hinzugerechnet</strong>.",
-    "subagentsClickHint": "Klicken Sie auf einen beliebigen Subagenten, um dessen gelesene Dateien, Befehle und Metriken zu prüfen:",
-    "currentlySelected": "Derzeit Ausgewählt",
-    "subagentCardDetails": "Tokens: <strong style=\"color: {color};\">{tokens}</strong> ({pct}% der Smart-Zone) • {files} Dateien • {cmds} Befehle",
-    "btnInspectArrow": "Prüfen ↗",
-    "tip1Title": "🎯 Warum in der Smart-Zone (< 250k Tokens) bleiben?",
-    "tip1Desc": "Obwohl 1M+-Modelle riesige Kontexte unterstützen, sind Detailtreue und Argumentationspräzision unter 250k Tokens deutlich überlegen. Oberhalb dieser Schwelle droht Aufmerksamkeitsverlust („Nadel im Heuhaufen“). Bei ~250k führt Antigravity eine automatische Komprimierung durch.",
-    "tip2Title": "✂️ So halten Sie den Kontext schlank",
-    "tip2Item1": "Lesen Sie gezielte Codebereiche mit StartLine und EndLine, statt komplette Dateien mit tausenden Zeilen einzulesen.",
-    "tip2Item2": "Vermeiden Sie Terminalbefehle mit übermäßig langen Ausgaben (nutzen Sie grep, head, tail).",
-    "tip2Item3": "Delegieren Sie aufwendige Aufgaben an <strong>Subagenten</strong> – diese laufen isoliert und belasten nicht den Hauptchat.",
-    "tip2Item4": "Starten Sie nach Erreichen eines Meilensteins oder bei Themenwechseln eine <strong>Neue Unterhaltung</strong> mit 100% frischem Kontext.",
-    "sponsorBtn": "💖 Sponsern",
-    "sponsorTooltip": "Unterstützen Sie Vitalf Open-Source-Tools auf GitHub Sponsors",
-    "languageLabel": "Sprache:"
-  }
-};
+  const TRANSLATIONS = ${JSON.stringify(TRANSLATIONS, null, 2)};
 
   function getSavedLocale() {
     try {
@@ -1020,13 +141,13 @@
                 document.querySelector('[data-testid*="model"]');
     if (btn) {
       const aria = (btn.getAttribute('aria-label') || '').trim();
-      const ariaMatch = aria.match(/current:\s*([A-Za-z0-9.\s]+)/i);
+      const ariaMatch = aria.match(/current:\\s*([A-Za-z0-9.\\s]+)/i);
       if (ariaMatch && ariaMatch[1]) {
-        return ariaMatch[1].replace(/\s+(Medium|Low|High)$/i, '').trim();
+        return ariaMatch[1].replace(/\\s+(Medium|Low|High)$/i, '').trim();
       }
       const text = (btn.innerText || '').trim();
       if (text && text.length < 40 && (text.includes('Gemini') || text.includes('Claude') || text.includes('Flash') || text.includes('Pro') || text.includes('GPT'))) {
-        return text.replace(/\s+(Medium|Low|High)$/i, '').trim();
+        return text.replace(/\\s+(Medium|Low|High)$/i, '').trim();
       }
     }
 
@@ -1301,7 +422,7 @@
           const out = s.runCommand.combinedOutput?.full || '';
           if (cmd) {
             commandsList.push({
-              cmd: cmd.trim().split('\n')[0].slice(0, 90),
+              cmd: cmd.trim().split('\\n')[0].slice(0, 90),
               fullCmd: cmd,
               outBytes: out.length,
               tokensEst: toTokens(out.length),
@@ -1365,34 +486,34 @@
   const widget = document.createElement('div');
   widget.id = WIDGET_ID;
   widget.style.cssText = 'display: inline-flex; align-items: center; justify-content: center; height: 28px; width: 28px; border-radius: 8px; cursor: pointer; user-select: none; position: relative; margin-left: 6px; vertical-align: middle; transition: background-color 0.15s ease; flex-shrink: 0;';
-  widget.innerHTML = `
+  widget.innerHTML = \`
     <div id="agy-badge" style="display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; position: relative;">
       <svg viewBox="0 0 32 32" style="width: 17px; height: 17px; transform: rotate(-90deg); display: block;">
         <circle cx="16" cy="16" r="13" fill="transparent" stroke="color-mix(in srgb, var(--foreground, #fff) 12%, transparent)" stroke-width="3.2" />
-        <circle id="agy-zone-ring" cx="16" cy="16" r="13" fill="transparent" stroke="#22c55e" stroke-width="3.8" stroke-linecap="round" stroke-dasharray="${CIRCLE_C}" stroke-dashoffset="${CIRCLE_C}" style="transition: stroke-dashoffset 0.35s ease, stroke 0.3s ease;" />
+        <circle id="agy-zone-ring" cx="16" cy="16" r="13" fill="transparent" stroke="#22c55e" stroke-width="3.8" stroke-linecap="round" stroke-dasharray="\${CIRCLE_C}" stroke-dashoffset="\${CIRCLE_C}" style="transition: stroke-dashoffset 0.35s ease, stroke 0.3s ease;" />
       </svg>
     </div>
-  `;
+  \`;
 
   // 2. CRIAR BREADCRUMB WIDGET (TOPO / CABEÇALHO)
   const breadcrumbWidget = document.createElement('div');
   breadcrumbWidget.id = BREADCRUMB_WIDGET_ID;
   breadcrumbWidget.style.cssText = 'display: inline-flex; align-items: center; justify-content: center; height: 22px; width: 22px; border-radius: 6px; cursor: pointer; user-select: none; position: relative; margin-left: 6px; vertical-align: middle; transition: background-color 0.15s ease; flex-shrink: 0;';
-  breadcrumbWidget.innerHTML = `
+  breadcrumbWidget.innerHTML = \`
     <div id="agy-breadcrumb-badge" style="display: flex; align-items: center; justify-content: center; width: 18px; height: 18px; position: relative;">
       <svg viewBox="0 0 32 32" style="width: 15px; height: 15px; transform: rotate(-90deg); display: block;">
         <circle cx="16" cy="16" r="13" fill="transparent" stroke="color-mix(in srgb, var(--foreground, #fff) 12%, transparent)" stroke-width="3.2" />
-        <circle id="agy-breadcrumb-ring" cx="16" cy="16" r="13" fill="transparent" stroke="#22c55e" stroke-width="3.8" stroke-linecap="round" stroke-dasharray="${CIRCLE_C}" stroke-dashoffset="${CIRCLE_C}" style="transition: stroke-dashoffset 0.35s ease, stroke 0.3s ease;" />
+        <circle id="agy-breadcrumb-ring" cx="16" cy="16" r="13" fill="transparent" stroke="#22c55e" stroke-width="3.8" stroke-linecap="round" stroke-dasharray="\${CIRCLE_C}" stroke-dashoffset="\${CIRCLE_C}" style="transition: stroke-dashoffset 0.35s ease, stroke 0.3s ease;" />
       </svg>
     </div>
-  `;
+  \`;
 
   // 3. SINGLETON POPOVER PORTADO DIRETAMENTE PARA O BODY
   const popover = document.createElement('div');
   popover.id = POPOVER_ID;
   popover.style.cssText = 'display: none; position: fixed; width: 310px; background: var(--card, #1c1c1f); color: var(--foreground, #f2f2f2); border: 1px solid var(--border, rgba(255, 255, 255, 0.12)); border-radius: 10px; box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6), 0 3px 10px rgba(0, 0, 0, 0.4); padding: 12px; z-index: 99999999; font-family: var(--font-sans, system-ui, -apple-system, sans-serif); pointer-events: auto; box-sizing: border-box; font-size: 11.5px; line-height: 1.4;';
 
-  popover.innerHTML = `
+  popover.innerHTML = \`
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
       <div style="display: flex; align-items: center; gap: 5px; max-width: 165px;">
         <span id="agy-scope-title" style="font-weight: 600; font-size: 11px; opacity: 0.85; letter-spacing: 0.03em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">CONTEXT WINDOW</span>
@@ -1478,7 +599,7 @@
 
     <!-- Seta do Popover com Posicionamento Dinâmico -->
     <div id="agy-popover-arrow" style="position: absolute; width: 8px; height: 8px; background: var(--card, #1c1c1f); pointer-events: none;"></div>
-  `;
+  \`;
 
   document.body.appendChild(popover);
 
@@ -1646,9 +767,9 @@
       if (data.commands && data.commands[0]) topItems.push('💻 ' + data.commands[0].cmd.slice(0, 24) + '... (~' + formatTokens(data.commands[0].tokensEst) + ')');
 
       if (topItems.length > 0) {
-        topConsumers.innerHTML = topItems.slice(0, 2).map(it => `
-          <div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; opacity:0.85;">${it}</div>
-        `).join('');
+        topConsumers.innerHTML = topItems.slice(0, 2).map(it => \`
+          <div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; opacity:0.85;">\${it}</div>
+        \`).join('');
       } else {
         topConsumers.innerHTML = '<span style="opacity: 0.7;">' + t('balancedConsumption') + '</span>';
       }
@@ -1663,12 +784,12 @@
       if (!isSubagent && latestSubagentsList && latestSubagentsList.length > 0) {
         sectionEl.style.display = 'block';
         countEl.innerText = String(latestSubagentsList.length);
-        listEl.innerHTML = latestSubagentsList.map(s => `
+        listEl.innerHTML = latestSubagentsList.map(s => \`
           <div style="display:flex; justify-content:space-between; align-items:center; padding: 2px 0;">
-            <span style="opacity: 0.9; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">• ${s.name}</span>
-            <span style="color: ${s.zone.color}; font-weight: 600; font-variant-numeric: tabular-nums;">${formatTokens(s.totalTokens)} (${s.pct}%)</span>
+            <span style="opacity: 0.9; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">• \${s.name}</span>
+            <span style="color: \${s.zone.color}; font-weight: 600; font-variant-numeric: tabular-nums;">\${formatTokens(s.totalTokens)} (\${s.pct}%)</span>
           </div>
-        `).join('');
+        \`).join('');
       } else {
         sectionEl.style.display = 'none';
       }
@@ -1707,7 +828,7 @@
   modal.id = MODAL_ID;
   modal.style.cssText = 'display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(5px); z-index: 999999999; align-items: center; justify-content: center; font-family: var(--font-sans, system-ui, -apple-system, sans-serif); color: var(--foreground, #f2f2f2); box-sizing: border-box;';
 
-  modal.innerHTML = `
+  modal.innerHTML = \`
     <div id="agy-modal-card" style="width: 780px; max-width: 95vw; max-height: 88vh; background: var(--card, #18181b); border: 1px solid var(--border, rgba(255, 255, 255, 0.14)); border-radius: 14px; box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7); display: flex; flex-direction: column; overflow: hidden; animation: agyFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);">
       
       <!-- Modal Header -->
@@ -1817,11 +938,11 @@
       </div>
       
     </div>
-  `;
+  \`;
 
   // Estilos globais dinâmicos
   const styleEl = document.createElement('style');
-  styleEl.textContent = `
+  styleEl.textContent = \`
     @keyframes agyFadeIn {
       from { opacity: 0; transform: scale(0.97); }
       to { opacity: 1; transform: scale(1); }
@@ -1830,7 +951,7 @@
     .agy-table-row:hover { background: rgba(255, 255, 255, 0.04) !important; }
     .agy-subagent-badge:hover { filter: brightness(1.25) !important; }
     #agy-modal-sponsor:hover, #agy-btn-popover-sponsor:hover { background: rgba(244, 63, 94, 0.28) !important; }
-  `;
+  \`;
   document.head.appendChild(styleEl);
 
   document.body.appendChild(modal);
@@ -1913,7 +1034,7 @@
       } else {
         const sub = latestSubagentsList.find(s => s.cascadeId === val);
         const subDetails = sub?.details || contextCache.get(val);
-        const sName = sub?.name || sessionSelect.options[sessionSelect.selectedIndex]?.text?.replace(/^[🤖🌐\s]+/, '') || t('scopeSubagent');
+        const sName = sub?.name || sessionSelect.options[sessionSelect.selectedIndex]?.text?.replace(/^[🤖🌐\\s]+/, '') || t('scopeSubagent');
         if (subDetails) {
           renderModalWithData(subDetails, '🤖 ' + sName);
         } else {
@@ -2118,13 +1239,13 @@
 
     const data = activeData || activeModalData;
     if (!data) {
-      container.innerHTML = `
+      container.innerHTML = \`
         <div style="text-align: center; padding: 40px 20px; color: var(--muted-foreground, #888);">
           <div style="font-size: 28px; margin-bottom: 8px;">✨</div>
-          <div style="font-weight: 600; font-size: 13px; color: var(--foreground, #eee); margin-bottom: 4px;">${t('emptyTitle')}</div>
-          <div style="font-size: 11px;">${t('emptyDesc')}</div>
+          <div style="font-weight: 600; font-size: 13px; color: var(--foreground, #eee); margin-bottom: 4px;">\${t('emptyTitle')}</div>
+          <div style="font-size: 11px;">\${t('emptyDesc')}</div>
         </div>
-      `;
+      \`;
       return;
     }
 
@@ -2132,62 +1253,62 @@
                        (activeModalScope && (activeModalScope.includes('🤖') || activeModalScope !== t('scopeMainConversation')));
 
     if (tab === 'overview') {
-      container.innerHTML = `
+      container.innerHTML = \`
         <div style="display: flex; flex-direction: column; gap: 12px;">
           
-          ${isSubagent ? `
+          \${isSubagent ? \`
             <div style="padding: 10px 12px; background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.25); border-radius: 8px; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;">
               <div style="display: flex; align-items: flex-start; gap: 8px;">
                 <span style="font-size: 16px;">🤖</span>
                 <div>
-                  <div style="font-weight: 600; color: #c084fc; font-size: 11.5px;">${t('subagentBannerTitle')}</div>
+                  <div style="font-weight: 600; color: #c084fc; font-size: 11.5px;">\${t('subagentBannerTitle')}</div>
                   <div style="font-size: 10.5px; color: var(--muted-foreground, #aaa); margin-top: 2px; line-height: 1.4;">
-                    ${t('subagentBannerDesc')}
+                    \${t('subagentBannerDesc')}
                   </div>
                 </div>
               </div>
               <button id="agy-btn-back-main" type="button" style="background: rgba(168, 85, 247, 0.15); border: 1px solid rgba(168, 85, 247, 0.3); color: #c084fc; border-radius: 6px; padding: 4px 8px; font-size: 10px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: background 0.15s ease;">
-                ${t('backToMainBtn')}
+                \${t('backToMainBtn')}
               </button>
             </div>
-          ` : ''}
+          \` : ''}
 
-          ${data.compactionCount > 0 ? `
+          \${data.compactionCount > 0 ? \`
             <div style="padding: 10px 12px; background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.25); border-radius: 8px; display: flex; align-items: flex-start; gap: 10px;">
               <span style="font-size: 16px;">🔄</span>
               <div>
                 <div style="font-weight: 600; color: #60a5fa; font-size: 11.5px; display: flex; align-items: center; gap: 6px;">
-                  <span>${t('compactionBannerTitle', { count: data.compactionCount })}</span>
-                  <span style="font-size: 9.5px; padding: 1px 5px; border-radius: 3px; background: rgba(59, 130, 246, 0.2); color: #93c5fd;">${t('compactionNormal')}</span>
+                  <span>\${t('compactionBannerTitle', { count: data.compactionCount })}</span>
+                  <span style="font-size: 9.5px; padding: 1px 5px; border-radius: 3px; background: rgba(59, 130, 246, 0.2); color: #93c5fd;">\${t('compactionNormal')}</span>
                 </div>
                 <div style="font-size: 10.5px; color: var(--muted-foreground, #aaa); margin-top: 2px; line-height: 1.4;">
-                  ${t('compactionBannerDesc', { tokens: formatTokens(data.totalTokens) })}
+                  \${t('compactionBannerDesc', { tokens: formatTokens(data.totalTokens) })}
                 </div>
               </div>
             </div>
-          ` : ''}
+          \` : ''}
 
           <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border, rgba(255,255,255,0.08)); border-radius: 8px; padding: 12px;">
             <div style="font-weight: 600; margin-bottom: 8px; font-size: 12px; display: flex; justify-content: space-between;">
-              <span>${t('categoryBreakdownTitle')}</span>
-              <span style="color: var(--muted-foreground, #999); font-weight: 400;">${t('totalActiveTokens', { tokens: formatTokens(data.totalTokens) })}</span>
+              <span>\${t('categoryBreakdownTitle')}</span>
+              <span style="color: var(--muted-foreground, #999); font-weight: 400;">\${t('totalActiveTokens', { tokens: formatTokens(data.totalTokens) })}</span>
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
               <div style="padding: 8px; background: rgba(168, 85, 247, 0.08); border-radius: 6px; border-left: 3px solid #a855f7;">
-                <div style="font-weight: 600; color: #c084fc;">${t('cardSystemTitle', { tokens: formatTokens(data.breakdown.system) })}</div>
-                <div style="font-size: 10px; color: var(--muted-foreground, #aaa); margin-top: 2px;">${t('cardSystemDesc')}</div>
+                <div style="font-weight: 600; color: #c084fc;">\${t('cardSystemTitle', { tokens: formatTokens(data.breakdown.system) })}</div>
+                <div style="font-size: 10px; color: var(--muted-foreground, #aaa); margin-top: 2px;">\${t('cardSystemDesc')}</div>
               </div>
               <div style="padding: 8px; background: rgba(59, 130, 246, 0.08); border-radius: 6px; border-left: 3px solid #3b82f6;">
-                <div style="font-weight: 600; color: #60a5fa;">${t('cardFilesTitle', { tokens: formatTokens(data.breakdown.files) })}</div>
-                <div style="font-size: 10px; color: var(--muted-foreground, #aaa); margin-top: 2px;">${t('cardFilesDesc', { count: data.filesCount })}</div>
+                <div style="font-weight: 600; color: #60a5fa;">\${t('cardFilesTitle', { tokens: formatTokens(data.breakdown.files) })}</div>
+                <div style="font-size: 10px; color: var(--muted-foreground, #aaa); margin-top: 2px;">\${t('cardFilesDesc', { count: data.filesCount })}</div>
               </div>
               <div style="padding: 8px; background: rgba(249, 115, 22, 0.08); border-radius: 6px; border-left: 3px solid #f97316;">
-                <div style="font-weight: 600; color: #fb923c;">${t('cardCmdsTitle', { tokens: formatTokens(data.breakdown.commands) })}</div>
-                <div style="font-size: 10px; color: var(--muted-foreground, #aaa); margin-top: 2px;">${t('cardCmdsDesc', { count: data.commandsCount })}</div>
+                <div style="font-weight: 600; color: #fb923c;">\${t('cardCmdsTitle', { tokens: formatTokens(data.breakdown.commands) })}</div>
+                <div style="font-size: 10px; color: var(--muted-foreground, #aaa); margin-top: 2px;">\${t('cardCmdsDesc', { count: data.commandsCount })}</div>
               </div>
               <div style="padding: 8px; background: rgba(16, 185, 129, 0.08); border-radius: 6px; border-left: 3px solid #10b981;">
-                <div style="font-weight: 600; color: #34d399;">${t('cardDialogueTitle', { tokens: formatTokens(data.breakdown.dialogue) })}</div>
-                <div style="font-size: 10px; color: var(--muted-foreground, #aaa); margin-top: 2px;">${t('cardDialogueDesc')}</div>
+                <div style="font-weight: 600; color: #34d399;">\${t('cardDialogueTitle', { tokens: formatTokens(data.breakdown.dialogue) })}</div>
+                <div style="font-size: 10px; color: var(--muted-foreground, #aaa); margin-top: 2px;">\${t('cardDialogueDesc')}</div>
               </div>
             </div>
           </div>
@@ -2195,29 +1316,29 @@
           <!-- Top 5 Arquivos -->
           <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border, rgba(255,255,255,0.08)); border-radius: 8px; padding: 12px;">
             <div style="font-weight: 600; margin-bottom: 6px; font-size: 12px; display: flex; justify-content: space-between;">
-              <span>${t('topConsumersTitle')}</span>
-              <button id="agy-link-all-files" type="button" style="background: none; border: none; color: #38bdf8; font-size: 10.5px; cursor: pointer; text-decoration: underline;">${t('viewAllBtn', { count: data.filesCount })}</button>
+              <span>\${t('topConsumersTitle')}</span>
+              <button id="agy-link-all-files" type="button" style="background: none; border: none; color: #38bdf8; font-size: 10.5px; cursor: pointer; text-decoration: underline;">\${t('viewAllBtn', { count: data.filesCount })}</button>
             </div>
             <div style="display: flex; flex-direction: column; gap: 4px;">
-              ${data.files.slice(0, 5).map((f, idx) => `
+              \${data.files.slice(0, 5).map((f, idx) => \`
                 <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 6px; background: rgba(255,255,255,0.02); border-radius: 4px; font-size: 11px;">
                   <div style="display: flex; align-items: center; gap: 6px; overflow: hidden;">
-                    <span style="opacity: 0.6; font-size: 10px;">#${idx + 1}</span>
-                    <span style="font-weight: 500; color: var(--foreground, #fff); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${f.path}">${f.name}</span>
-                    <span style="font-size: 9.5px; opacity: 0.6;">(${formatBytes(f.bytes)})</span>
+                    <span style="opacity: 0.6; font-size: 10px;">#\${idx + 1}</span>
+                    <span style="font-weight: 500; color: var(--foreground, #fff); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="\${f.path}">\${f.name}</span>
+                    <span style="font-size: 9.5px; opacity: 0.6;">(\${formatBytes(f.bytes)})</span>
                   </div>
                   <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
-                    <span style="color: #60a5fa; font-weight: 600; font-variant-numeric: tabular-nums;">~${formatTokens(f.tokensEst)} tokens</span>
-                    <span style="font-size: 9px; opacity: 0.6; background: rgba(255,255,255,0.06); padding: 1px 4px; border-radius: 3px;">${f.count}x</span>
+                    <span style="color: #60a5fa; font-weight: 600; font-variant-numeric: tabular-nums;">~\${formatTokens(f.tokensEst)} tokens</span>
+                    <span style="font-size: 9px; opacity: 0.6; background: rgba(255,255,255,0.06); padding: 1px 4px; border-radius: 3px;">\${f.count}x</span>
                   </div>
                 </div>
-              `).join('')}
-              ${data.files.length === 0 ? '<div style="color: var(--muted-foreground, #888); font-size: 11px; text-align: center; padding: 10px;">' + t('noFilesYet') + '</div>' : ''}
+              \`).join('')}
+              \${data.files.length === 0 ? '<div style="color: var(--muted-foreground, #888); font-size: 11px; text-align: center; padding: 10px;">' + t('noFilesYet') + '</div>' : ''}
             </div>
           </div>
 
         </div>
-      `;
+      \`;
 
       container.querySelector('#agy-btn-back-main')?.addEventListener('click', () => {
         const select = modal.querySelector('#agy-session-select');
@@ -2235,16 +1356,16 @@
       const costs = data.costs || calculateCosts(data.inputTokens, data.cachedTokens, data.outputTokens, pricing);
       const projections = calculateProjections(data.cachePct / 100, data.outputTokens, pricing);
 
-      container.innerHTML = `
+      container.innerHTML = \`
         <div style="display: flex; flex-direction: column; gap: 12px;">
           
           <!-- Callout sobre o Modelo e Plano -->
           <div style="padding: 10px 12px; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; display: flex; align-items: flex-start; gap: 10px;">
             <span style="font-size: 16px;">ℹ️</span>
             <div>
-              <div style="font-weight: 600; color: #38bdf8; font-size: 11.5px;">${t('pricingCalloutTitle')}</div>
+              <div style="font-weight: 600; color: #38bdf8; font-size: 11.5px;">\${t('pricingCalloutTitle')}</div>
               <div style="font-size: 10.5px; color: var(--muted-foreground, #aaa); margin-top: 2px; line-height: 1.4;">
-                ${t('pricingCalloutDesc', { provider: pricing.provider, model: pricing.displayName })}
+                \${t('pricingCalloutDesc', { provider: pricing.provider, model: pricing.displayName })}
               </div>
             </div>
           </div>
@@ -2252,176 +1373,176 @@
           <!-- Cartão de Economia com Cache de Contexto -->
           <div style="background: rgba(34, 197, 94, 0.06); border: 1px solid rgba(34, 197, 94, 0.25); border-radius: 8px; padding: 12px;">
             <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px;">
-              <span style="font-weight: 600; color: #22c55e; font-size: 12px;">${t('cachingEfficiencyTitle')}</span>
-              <span style="font-size: 11px; color: #22c55e; font-weight: 700;">${t('inFastCacheTag', { pct: data.cachePct })}</span>
+              <span style="font-weight: 600; color: #22c55e; font-size: 12px;">\${t('cachingEfficiencyTitle')}</span>
+              <span style="font-size: 11px; color: #22c55e; font-weight: 700;">\${t('inFastCacheTag', { pct: data.cachePct })}</span>
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 8px;">
               <div style="padding: 8px; background: rgba(0,0,0,0.25); border-radius: 6px;">
-                <div style="font-size: 10px; color: var(--muted-foreground, #999);">${t('currentCostCached')}</div>
-                <div style="font-size: 15px; font-weight: 700; color: #22c55e; margin-top: 2px;">${formatUSD(costs.totalCost)}</div>
-                <div style="font-size: 9.5px; color: var(--muted-foreground, #888);">${formatBRL(costs.totalCost)}</div>
+                <div style="font-size: 10px; color: var(--muted-foreground, #999);">\${t('currentCostCached')}</div>
+                <div style="font-size: 15px; font-weight: 700; color: #22c55e; margin-top: 2px;">\${formatUSD(costs.totalCost)}</div>
+                <div style="font-size: 9.5px; color: var(--muted-foreground, #888);">\${formatBRL(costs.totalCost)}</div>
               </div>
               <div style="padding: 8px; background: rgba(0,0,0,0.25); border-radius: 6px;">
-                <div style="font-size: 10px; color: var(--muted-foreground, #999);">${t('withoutCache')}</div>
-                <div style="font-size: 15px; font-weight: 700; color: var(--muted-foreground, #aaa); margin-top: 2px;">${formatUSD(costs.costWithoutCache)}</div>
-                <div style="font-size: 9.5px; color: var(--muted-foreground, #888);">${formatBRL(costs.costWithoutCache)}</div>
+                <div style="font-size: 10px; color: var(--muted-foreground, #999);">\${t('withoutCache')}</div>
+                <div style="font-size: 15px; font-weight: 700; color: var(--muted-foreground, #aaa); margin-top: 2px;">\${formatUSD(costs.costWithoutCache)}</div>
+                <div style="font-size: 9.5px; color: var(--muted-foreground, #888);">\${formatBRL(costs.costWithoutCache)}</div>
               </div>
               <div style="padding: 8px; background: rgba(34, 197, 94, 0.12); border-radius: 6px; border: 1px solid rgba(34, 197, 94, 0.3);">
-                <div style="font-size: 10px; color: #22c55e; font-weight: 600;">${t('realSavings')}</div>
-                <div style="font-size: 15px; font-weight: 700; color: #22c55e; margin-top: 2px;">-${formatUSD(costs.savedCost)}</div>
-                <div style="font-size: 9.5px; color: #22c55e;">-${formatBRL(costs.savedCost)} ${t('offDiscount', { discount: pricing.cacheDiscountPct })}</div>
+                <div style="font-size: 10px; color: #22c55e; font-weight: 600;">\${t('realSavings')}</div>
+                <div style="font-size: 15px; font-weight: 700; color: #22c55e; margin-top: 2px;">-\${formatUSD(costs.savedCost)}</div>
+                <div style="font-size: 9.5px; color: #22c55e;">-\${formatBRL(costs.savedCost)} \${t('offDiscount', { discount: pricing.cacheDiscountPct })}</div>
               </div>
             </div>
           </div>
 
           <!-- Tabela de Preços e Projeções de Zona -->
           <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border, rgba(255,255,255,0.08)); border-radius: 8px; padding: 12px;">
-            <div style="font-weight: 600; margin-bottom: 8px; font-size: 12px;">${t('refPricingTitle', { model: pricing.displayName })}</div>
+            <div style="font-weight: 600; margin-bottom: 8px; font-size: 12px;">\${t('refPricingTitle', { model: pricing.displayName })}</div>
             <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; font-size: 10.5px; padding: 4px 6px; color: var(--muted-foreground, #888); border-bottom: 1px solid var(--border, rgba(255,255,255,0.08)); font-weight: 600;">
-              <span>${t('colCategory')}</span>
-              <span style="text-align: right;">${t('colQuantity')}</span>
-              <span style="text-align: right;">${t('colRate')}</span>
-              <span style="text-align: right;">${t('colEstTotal')}</span>
+              <span>\${t('colCategory')}</span>
+              <span style="text-align: right;">\${t('colQuantity')}</span>
+              <span style="text-align: right;">\${t('colRate')}</span>
+              <span style="text-align: right;">\${t('colEstTotal')}</span>
             </div>
             <div style="display: flex; flex-direction: column; gap: 4px; margin-top: 4px; font-size: 11px;">
               <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; padding: 3px 6px; align-items: center;">
-                <span>${t('rowCached')}</span>
-                <span style="text-align: right; font-variant-numeric: tabular-nums;">${formatTokens(data.cachedTokens)}</span>
-                <span style="text-align: right; font-variant-numeric: tabular-nums; color: #38bdf8;">$${pricing.cachePricePerM.toFixed(4)}</span>
-                <span style="text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; color: #38bdf8;">${formatUSD(costs.costCache)}</span>
+                <span>\${t('rowCached')}</span>
+                <span style="text-align: right; font-variant-numeric: tabular-nums;">\${formatTokens(data.cachedTokens)}</span>
+                <span style="text-align: right; font-variant-numeric: tabular-nums; color: #38bdf8;">$\${pricing.cachePricePerM.toFixed(4)}</span>
+                <span style="text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; color: #38bdf8;">\${formatUSD(costs.costCache)}</span>
               </div>
               <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; padding: 3px 6px; align-items: center;">
-                <span>${t('rowUncached')}</span>
-                <span style="text-align: right; font-variant-numeric: tabular-nums;">${formatTokens(data.inputTokens)}</span>
-                <span style="text-align: right; font-variant-numeric: tabular-nums;">$${pricing.inputPricePerM.toFixed(2)}</span>
-                <span style="text-align: right; font-variant-numeric: tabular-nums; font-weight: 600;">${formatUSD(costs.costInput)}</span>
+                <span>\${t('rowUncached')}</span>
+                <span style="text-align: right; font-variant-numeric: tabular-nums;">\${formatTokens(data.inputTokens)}</span>
+                <span style="text-align: right; font-variant-numeric: tabular-nums;">$\${pricing.inputPricePerM.toFixed(2)}</span>
+                <span style="text-align: right; font-variant-numeric: tabular-nums; font-weight: 600;">\${formatUSD(costs.costInput)}</span>
               </div>
               <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; padding: 3px 6px; align-items: center;">
-                <span>${t('rowOutput')}</span>
-                <span style="text-align: right; font-variant-numeric: tabular-nums;">${formatTokens(data.outputTokens)}</span>
-                <span style="text-align: right; font-variant-numeric: tabular-nums;">$${pricing.outputPricePerM.toFixed(2)}</span>
-                <span style="text-align: right; font-variant-numeric: tabular-nums; font-weight: 600;">${formatUSD(costs.costOutput)}</span>
+                <span>\${t('rowOutput')}</span>
+                <span style="text-align: right; font-variant-numeric: tabular-nums;">\${formatTokens(data.outputTokens)}</span>
+                <span style="text-align: right; font-variant-numeric: tabular-nums;">$\${pricing.outputPricePerM.toFixed(2)}</span>
+                <span style="text-align: right; font-variant-numeric: tabular-nums; font-weight: 600;">\${formatUSD(costs.costOutput)}</span>
               </div>
             </div>
           </div>
 
           <!-- Projeção Smart Zone vs Dumb Zone -->
           <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border, rgba(255,255,255,0.08)); border-radius: 8px; padding: 12px;">
-            <div style="font-weight: 600; margin-bottom: 6px; font-size: 12px;">${t('projectionsTitle')}</div>
+            <div style="font-weight: 600; margin-bottom: 6px; font-size: 12px;">\${t('projectionsTitle')}</div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px;">
               <div style="padding: 10px; background: rgba(34, 197, 94, 0.08); border-radius: 6px; border-left: 3px solid #22c55e;">
-                <div style="font-weight: 600; color: #22c55e; font-size: 11px;">${t('smartZoneTitle')}</div>
-                <div style="font-size: 16px; font-weight: 700; color: #22c55e; margin: 3px 0;">${formatUSD(projections.smart.totalCost)} <span style="font-size: 10px; font-weight: 400; color: var(--muted-foreground, #aaa);">(${formatBRL(projections.smart.totalCost)})</span></div>
-                <div style="font-size: 10px; color: var(--muted-foreground, #aaa);">${t('smartZoneDesc')}</div>
+                <div style="font-weight: 600; color: #22c55e; font-size: 11px;">\${t('smartZoneTitle')}</div>
+                <div style="font-size: 16px; font-weight: 700; color: #22c55e; margin: 3px 0;">\${formatUSD(projections.smart.totalCost)} <span style="font-size: 10px; font-weight: 400; color: var(--muted-foreground, #aaa);">(\${formatBRL(projections.smart.totalCost)})</span></div>
+                <div style="font-size: 10px; color: var(--muted-foreground, #aaa);">\${t('smartZoneDesc')}</div>
               </div>
               <div style="padding: 10px; background: rgba(239, 68, 68, 0.08); border-radius: 6px; border-left: 3px solid #ef4444;">
-                <div style="font-weight: 600; color: #ef4444; font-size: 11px;">${t('dumbZoneTitle')}</div>
-                <div style="font-size: 16px; font-weight: 700; color: #ef4444; margin: 3px 0;">${formatUSD(projections.raw.totalCost)} <span style="font-size: 10px; font-weight: 400; color: var(--muted-foreground, #aaa);">(${formatBRL(projections.raw.totalCost)})</span></div>
-                <div style="font-size: 10px; color: var(--muted-foreground, #aaa);">${t('dumbZoneDesc')}</div>
+                <div style="font-weight: 600; color: #ef4444; font-size: 11px;">\${t('dumbZoneTitle')}</div>
+                <div style="font-size: 16px; font-weight: 700; color: #ef4444; margin: 3px 0;">\${formatUSD(projections.raw.totalCost)} <span style="font-size: 10px; font-weight: 400; color: var(--muted-foreground, #aaa);">(\${formatBRL(projections.raw.totalCost)})</span></div>
+                <div style="font-size: 10px; color: var(--muted-foreground, #aaa);">\${t('dumbZoneDesc')}</div>
               </div>
             </div>
           </div>
 
         </div>
-      `;
+      \`;
     } else if (tab === 'files') {
       if (data.files.length === 0) {
-        container.innerHTML = `<div style="text-align:center; padding: 30px; color: var(--muted-foreground, #888);">${t('noFilesSession')}</div>`;
+        container.innerHTML = \`<div style="text-align:center; padding: 30px; color: var(--muted-foreground, #888);">\${t('noFilesSession')}</div>\`;
         return;
       }
-      container.innerHTML = `
+      container.innerHTML = \`
         <div style="display: flex; flex-direction: column; gap: 4px;">
           <div style="display: grid; grid-template-columns: 2fr 100px 100px 80px; padding: 6px 8px; font-weight: 600; font-size: 10.5px; color: var(--muted-foreground, #888); border-bottom: 1px solid var(--border, rgba(255,255,255,0.1));">
-            <span>${t('colFileName')}</span>
-            <span style="text-align: right;">${t('colFileSize')}</span>
-            <span style="text-align: right;">${t('colFileTokens')}</span>
-            <span style="text-align: right;">${t('colFileReads')}</span>
+            <span>\${t('colFileName')}</span>
+            <span style="text-align: right;">\${t('colFileSize')}</span>
+            <span style="text-align: right;">\${t('colFileTokens')}</span>
+            <span style="text-align: right;">\${t('colFileReads')}</span>
           </div>
-          ${data.files.map(f => `
+          \${data.files.map(f => \`
             <div class="agy-table-row" style="display: grid; grid-template-columns: 2fr 100px 100px 80px; padding: 6px 8px; border-radius: 6px; font-size: 11px; align-items: center; transition: background 0.1s;">
-              <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${f.path}">
-                <span style="font-weight: 600; color: var(--foreground, #fff);">${f.name}</span>
-                <span style="font-size: 9.5px; color: var(--muted-foreground, #888); margin-left: 6px;">${f.path.replace('/home/ph/projects/', '')}</span>
+              <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="\${f.path}">
+                <span style="font-weight: 600; color: var(--foreground, #fff);">\${f.name}</span>
+                <span style="font-size: 9.5px; color: var(--muted-foreground, #888); margin-left: 6px;">\${f.path.replace('/home/ph/projects/', '')}</span>
               </div>
-              <span style="text-align: right; color: var(--muted-foreground, #aaa); font-variant-numeric: tabular-nums;">${formatBytes(f.bytes)}</span>
-              <span style="text-align: right; font-weight: 600; color: #60a5fa; font-variant-numeric: tabular-nums;">~${formatTokens(f.tokensEst)}</span>
-              <span style="text-align: right; color: var(--muted-foreground, #aaa); font-variant-numeric: tabular-nums;">${f.count}x</span>
+              <span style="text-align: right; color: var(--muted-foreground, #aaa); font-variant-numeric: tabular-nums;">\${formatBytes(f.bytes)}</span>
+              <span style="text-align: right; font-weight: 600; color: #60a5fa; font-variant-numeric: tabular-nums;">~\${formatTokens(f.tokensEst)}</span>
+              <span style="text-align: right; color: var(--muted-foreground, #aaa); font-variant-numeric: tabular-nums;">\${f.count}x</span>
             </div>
-          `).join('')}
+          \`).join('')}
         </div>
-      `;
+      \`;
     } else if (tab === 'commands') {
       if (data.commands.length === 0) {
-        container.innerHTML = `<div style="text-align:center; padding: 30px; color: var(--muted-foreground, #888);">${t('noCommandsSession')}</div>`;
+        container.innerHTML = \`<div style="text-align:center; padding: 30px; color: var(--muted-foreground, #888);">\${t('noCommandsSession')}</div>\`;
         return;
       }
-      container.innerHTML = `
+      container.innerHTML = \`
         <div style="display: flex; flex-direction: column; gap: 4px;">
           <div style="display: grid; grid-template-columns: 3fr 100px 100px; padding: 6px 8px; font-weight: 600; font-size: 10.5px; color: var(--muted-foreground, #888); border-bottom: 1px solid var(--border, rgba(255,255,255,0.1));">
-            <span>${t('colCommand')}</span>
-            <span style="text-align: right;">${t('colOutput')}</span>
-            <span style="text-align: right;">${t('colFileTokens')}</span>
+            <span>\${t('colCommand')}</span>
+            <span style="text-align: right;">\${t('colOutput')}</span>
+            <span style="text-align: right;">\${t('colFileTokens')}</span>
           </div>
-          ${data.commands.map(c => `
+          \${data.commands.map(c => \`
             <div class="agy-table-row" style="display: grid; grid-template-columns: 3fr 100px 100px; padding: 6px 8px; border-radius: 6px; font-size: 11px; align-items: center; transition: background 0.1s;">
-              <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: monospace; font-size: 10.5px; color: #fb923c;" title="${c.fullCmd}">
-                ${c.cmd}
+              <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: monospace; font-size: 10.5px; color: #fb923c;" title="\${c.fullCmd}">
+                \${c.cmd}
               </div>
-              <span style="text-align: right; color: var(--muted-foreground, #aaa); font-variant-numeric: tabular-nums;">${formatBytes(c.outBytes)}</span>
-              <span style="text-align: right; font-weight: 600; color: #fb923c; font-variant-numeric: tabular-nums;">~${formatTokens(c.tokensEst)}</span>
+              <span style="text-align: right; color: var(--muted-foreground, #aaa); font-variant-numeric: tabular-nums;">\${formatBytes(c.outBytes)}</span>
+              <span style="text-align: right; font-weight: 600; color: #fb923c; font-variant-numeric: tabular-nums;">~\${formatTokens(c.tokensEst)}</span>
             </div>
-          `).join('')}
+          \`).join('')}
         </div>
-      `;
+      \`;
     } else if (tab === 'subagents') {
       if (latestSubagentsList.length === 0) {
-        container.innerHTML = `<div style="text-align:center; padding: 30px; color: var(--muted-foreground, #888);">${t('noSubagentsSession')}</div>`;
+        container.innerHTML = \`<div style="text-align:center; padding: 30px; color: var(--muted-foreground, #888);">\${t('noSubagentsSession')}</div>\`;
         return;
       }
 
-      container.innerHTML = `
+      container.innerHTML = \`
         <div style="display: flex; flex-direction: column; gap: 8px;">
           
           <div style="padding: 10px 12px; background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.25); border-radius: 8px; display: flex; align-items: flex-start; gap: 10px;">
             <span style="font-size: 16px;">🛡️</span>
             <div>
-              <div style="font-weight: 600; color: #4ade80; font-size: 11.5px;">${t('subagentsGuaranteeTitle')}</div>
+              <div style="font-weight: 600; color: #4ade80; font-size: 11.5px;">\${t('subagentsGuaranteeTitle')}</div>
               <div style="font-size: 10.5px; color: var(--muted-foreground, #aaa); margin-top: 2px; line-height: 1.4;">
-                ${t('subagentsGuaranteeDesc')}
+                \${t('subagentsGuaranteeDesc')}
               </div>
             </div>
           </div>
 
           <div style="font-size: 11px; color: var(--muted-foreground, #aaa); margin-bottom: 2px;">
-            ${t('subagentsClickHint')}
+            \${t('subagentsClickHint')}
           </div>
 
-          ${latestSubagentsList.map(s => {
+          \${latestSubagentsList.map(s => {
             const isCurrent = activeModalData && activeModalData.cascadeId === s.cascadeId;
-            return `
-              <div style="padding: 10px 14px; background: ${isCurrent ? 'rgba(34, 197, 94, 0.08)' : 'rgba(255,255,255,0.03)'}; border: 1px solid ${isCurrent ? 'rgba(34, 197, 94, 0.3)' : 'var(--border, rgba(255,255,255,0.08))'}; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+            return \`
+              <div style="padding: 10px 14px; background: \${isCurrent ? 'rgba(34, 197, 94, 0.08)' : 'rgba(255,255,255,0.03)'}; border: 1px solid \${isCurrent ? 'rgba(34, 197, 94, 0.3)' : 'var(--border, rgba(255,255,255,0.08))'}; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
                 <div style="min-width: 0; flex: 1;">
                   <div style="font-weight: 600; color: var(--foreground, #fff); font-size: 12px; display: flex; align-items: center; gap: 6px;">
-                    <span>🤖 ${s.name}</span>
-                    ${isCurrent ? '<span style="font-size: 9.5px; padding: 1px 5px; border-radius: 3px; background: rgba(34, 197, 94, 0.2); color: #22c55e;">' + t('currentlySelected') + '</span>' : ''}
+                    <span>🤖 \${s.name}</span>
+                    \${isCurrent ? '<span style="font-size: 9.5px; padding: 1px 5px; border-radius: 3px; background: rgba(34, 197, 94, 0.2); color: #22c55e;">' + t('currentlySelected') + '</span>' : ''}
                   </div>
                   <div style="font-size: 10px; color: var(--muted-foreground, #888); margin-top: 2px;">
-                    ${t('subagentCardDetails', { color: s.zone.color, tokens: formatTokens(s.totalTokens), pct: s.pct, files: s.details?.filesCount || 0, cmds: s.details?.commandsCount || 0 })}
+                    \${t('subagentCardDetails', { color: s.zone.color, tokens: formatTokens(s.totalTokens), pct: s.pct, files: s.details?.filesCount || 0, cmds: s.details?.commandsCount || 0 })}
                   </div>
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px;">
-                  <span style="font-weight: 700; font-size: 10.5px; padding: 2px 7px; border-radius: 4px; background: ${s.zone.bg}; color: ${s.zone.color};">
-                    ${s.zone.tag}
+                  <span style="font-weight: 700; font-size: 10.5px; padding: 2px 7px; border-radius: 4px; background: \${s.zone.bg}; color: \${s.zone.color};">
+                    \${s.zone.tag}
                   </span>
-                  <button type="button" class="agy-inspect-subagent-btn" data-cascade-id="${s.cascadeId}" style="background: var(--secondary, rgba(255,255,255,0.08)); border: 1px solid var(--border, rgba(255,255,255,0.15)); color: var(--foreground, #eee); border-radius: 6px; padding: 4px 8px; font-size: 10.5px; font-weight: 600; cursor: pointer; transition: background 0.15s ease;">
-                    ${t('btnInspectArrow')}
+                  <button type="button" class="agy-inspect-subagent-btn" data-cascade-id="\${s.cascadeId}" style="background: var(--secondary, rgba(255,255,255,0.08)); border: 1px solid var(--border, rgba(255,255,255,0.15)); color: var(--foreground, #eee); border-radius: 6px; padding: 4px 8px; font-size: 10.5px; font-weight: 600; cursor: pointer; transition: background 0.15s ease;">
+                    \${t('btnInspectArrow')}
                   </button>
                 </div>
               </div>
-            `;
+            \`;
           }).join('')}
         </div>
-      `;
+      \`;
 
       container.querySelectorAll('.agy-inspect-subagent-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -2436,20 +1557,20 @@
         });
       });
     } else if (tab === 'tips') {
-      container.innerHTML = `
+      container.innerHTML = \`
         <div style="display: flex; flex-direction: column; gap: 10px; line-height: 1.5; color: var(--foreground, #ddd);">
           <div style="padding: 10px; background: rgba(34, 197, 94, 0.08); border-radius: 6px; border-left: 3px solid #22c55e;">
-            <div style="font-weight: 600; color: #22c55e; margin-bottom: 2px;">${t('tip1Title')}</div>
-            <div style="font-size: 11px;">${t('tip1Desc')}</div>
+            <div style="font-weight: 600; color: #22c55e; margin-bottom: 2px;">\${t('tip1Title')}</div>
+            <div style="font-size: 11px;">\${t('tip1Desc')}</div>
           </div>
 
           <div style="padding: 10px; background: rgba(59, 130, 246, 0.08); border-radius: 6px; border-left: 3px solid #3b82f6;">
-            <div style="font-weight: 600; color: #60a5fa; margin-bottom: 2px;">${t('tip2Title')}</div>
+            <div style="font-weight: 600; color: #60a5fa; margin-bottom: 2px;">\${t('tip2Title')}</div>
             <ul style="margin: 4px 0 0 16px; padding: 0; font-size: 10.5px;">
-              <li>${t('tip2Item1')}</li>
-              <li>${t('tip2Item2')}</li>
-              <li>${t('tip2Item3')}</li>
-              <li>${t('tip2Item4')}</li>
+              <li>\${t('tip2Item1')}</li>
+              <li>\${t('tip2Item2')}</li>
+              <li>\${t('tip2Item3')}</li>
+              <li>\${t('tip2Item4')}</li>
             </ul>
           </div>
 
@@ -2459,15 +1580,15 @@
                 <span>💖 Vitalf Technologies Open Source</span>
               </div>
               <div style="font-size: 10.5px; color: var(--muted-foreground, #aaa); margin-top: 2px;">
-                ${t('sponsorTooltip')}
+                \${t('sponsorTooltip')}
               </div>
             </div>
             <a href="https://github.com/sponsors/vitalfin" target="_blank" rel="noopener noreferrer" style="text-decoration: none; background: #e11d48; color: #fff; border-radius: 6px; padding: 6px 12px; font-size: 11px; font-weight: 600; white-space: nowrap; transition: opacity 0.15s ease;">
-              ${t('sponsorBtn')} ↗
+              \${t('sponsorBtn')} ↗
             </a>
           </div>
         </div>
-      `;
+      \`;
     }
   }
 
@@ -2597,7 +1718,7 @@
       if (!cascadeId) continue;
 
       const details = await fetchContextDetails(cascadeId);
-      const name = (node.querySelector('span')?.innerText || '').split('\n')[0].trim() || t('scopeSubagent');
+      const name = (node.querySelector('span')?.innerText || '').split('\\n')[0].trim() || t('scopeSubagent');
       const totalTokens = details?.totalTokens || 0;
       const pct = Math.round((totalTokens / SMART_LIMIT) * 1000) / 10;
       const visualPct = Math.min(100, Math.max(0, pct));
@@ -2639,8 +1760,8 @@
       node.__agySubagentData = subItem;
       badge.style.background = zone.bg;
       badge.style.color = zone.color;
-      badge.innerHTML = `<span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:${zone.color};"></span><span>${formatTokens(totalTokens)} / 250k (${pct}%)</span>`;
-      badge.title = `${name}: ${zone.tag} — ${t('btnInspectArrow')}`;
+      badge.innerHTML = \`<span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:\${zone.color};"></span><span>\${formatTokens(totalTokens)} / 250k (\${pct}%)</span>\`;
+      badge.title = \`\${name}: \${zone.tag} — \${t('btnInspectArrow')}\`;
     }
 
     latestSubagentsList = subagentsList;
@@ -2652,7 +1773,7 @@
     ensureWidgetMounted();
 
     const path = location.pathname;
-    const match = path.match(/\/c\/([a-zA-Z0-9_-]+)/);
+    const match = path.match(/\\/c\\/([a-zA-Z0-9_-]+)/);
 
     // Rota de nova conversa sem ID
     if (!match) {
@@ -2694,8 +1815,8 @@
       ring.style.strokeDashoffset = offset;
     }
     widget.title = isInsideSubagent
-      ? `${t('scopeSubagent')} ${activeSub.name}: ${formatTokens(totalTokens)} / 250k (${pct}%) — ${zone.tag}`
-      : `${t('scopeContextWindow')}: ${formatTokens(totalTokens)} / 250k (${pct}%) — ${zone.tag}`;
+      ? \`\${t('scopeSubagent')} \${activeSub.name}: \${formatTokens(totalTokens)} / 250k (\${pct}%) — \${zone.tag}\`
+      : \`\${t('scopeContextWindow')}: \${formatTokens(totalTokens)} / 250k (\${pct}%) — \${zone.tag}\`;
 
     // Atualiza anel SVG do breadcrumb widget
     const bRing = document.getElementById('agy-breadcrumb-ring');
@@ -2705,11 +1826,11 @@
         const subOffset = Math.max(0, CIRCLE_C - (subVisualPct / 100) * CIRCLE_C);
         bRing.style.stroke = activeSub.zone.color;
         bRing.style.strokeDashoffset = subOffset;
-        breadcrumbWidget.title = `${t('scopeSubagent')} ${activeSub.name}: ${formatTokens(activeSub.totalTokens)} / 250k (${activeSub.pct}%) — ${activeSub.zone.tag}`;
+        breadcrumbWidget.title = \`\${t('scopeSubagent')} \${activeSub.name}: \${formatTokens(activeSub.totalTokens)} / 250k (\${activeSub.pct}%) — \${activeSub.zone.tag}\`;
       } else {
         bRing.style.stroke = zone.color;
         bRing.style.strokeDashoffset = offset;
-        breadcrumbWidget.title = `${t('scopeContextWindow')}: ${formatTokens(totalTokens)} / 250k (${pct}%) — ${zone.tag}`;
+        breadcrumbWidget.title = \`\${t('scopeContextWindow')}: \${formatTokens(totalTokens)} / 250k (\${pct}%) — \${zone.tag}\`;
       }
     }
 
@@ -2731,3 +1852,7 @@
   window.__agyWidgetInterval = setInterval(updateAll, 2500);
   updateAll();
 })();
+`;
+
+fs.writeFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), 'widget.js'), widgetJsContent, 'utf8');
+console.log('✅ widget.js v1.5.0 gerado com sucesso!');

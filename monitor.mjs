@@ -100,6 +100,7 @@ console.log('  🔴 > 60%:     DUMB ZONE (Qualidade baixa)');
 console.log('  💰 v1.2.0:    Preço Previsto & Créditos ativos');
 console.log('  🛸 v1.3.0:    Portal Popover & Subagent Inspector ativos');
 console.log('  🛡️ v1.4.0:    Subagent Context Isolation & Compaction Detection ativos');
+console.log('  🌐 v1.5.0:    i18n (7 Languages: EN, PT, ES, JA, ZH, FR, DE) & Sponsor active');
 
 // Ciclo contínuo de verificação
 setInterval(runCycle, 4000);

@@ -88,7 +88,7 @@ ws.onopen = async () => {
           success: true,
           contentHtmlLength: container?.innerHTML?.length || 0,
           hasExplanation: container?.innerHTML?.includes('Google AI Pro'),
-          hasPricingTable: container?.innerHTML?.includes('CATEGORIA DE TOKEN'),
+          hasPricingTable: container?.innerHTML?.includes('CATEGORIA DE TOKEN') || container?.innerHTML?.includes('TOKEN CATEGORY'),
           hasProjections: container?.innerHTML?.includes('Smart Zone (250k tokens)'),
           innerTextPreview: container?.innerText?.slice(0, 300)
         };

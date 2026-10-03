@@ -80,7 +80,7 @@ ws.onopen = async () => {
 
     const state = evalResult.result.value;
     console.log('🔍 Elementos v1.4.0 no DOM:', JSON.stringify(state, null, 2));
-    assert.strictEqual(state.version, '1.4.0-subagent-isolation-compaction', 'Versão deve ser 1.4.0-subagent-isolation-compaction');
+    assert(state.version === '1.4.0-subagent-isolation-compaction' || state.version === '1.5.0-i18n-opensource', 'Versão deve ser 1.4.0 ou 1.5.0-i18n-opensource');
     assert.strictEqual(state.hasWidget, true, 'Widget deve existir');
     assert.strictEqual(state.hasPopover, true, 'Popover deve existir');
     assert.strictEqual(state.hasModal, true, 'Modal deve existir');
@@ -210,7 +210,7 @@ ws.onopen = async () => {
     const compRes = compactionTest.result.value;
     console.log('🔄 Teste de Compactação:', JSON.stringify(compRes, null, 2));
     assert.strictEqual(compRes.modalCompTagDisplay, 'inline-block', 'Tag de compactação deve estar visível');
-    assert(compRes.modalCompTagText.includes('COMPACTADO (2x)'), 'Tag deve indicar COMPACTADO (2x)');
+    assert(compRes.modalCompTagText.includes('COMPACTADO (2x)') || compRes.modalCompTagText.includes('COMPACTED (2x)'), 'Tag deve indicar compactação 2x');
     console.log('  ✓ Teste 3 passou: Detecção e exibição visual de compactação validadas.');
 
     // 5. Teste de Contexto acima de 250k (sem resetar para zero e mantendo porcentagem real)
