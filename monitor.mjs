@@ -99,6 +99,7 @@ console.log('  🟡 40% - 60%: ATENÇÃO ! Degrada (Amarelo)');
 console.log('  🔴 > 60%:     DUMB ZONE (Qualidade baixa)');
 console.log('  💰 v1.2.0:    Preço Previsto & Créditos ativos');
 console.log('  🛸 v1.3.0:    Portal Popover & Subagent Inspector ativos');
+console.log('  🛡️ v1.4.0:    Subagent Context Isolation & Compaction Detection ativos');
 
 // Ciclo contínuo de verificação
 setInterval(runCycle, 4000);

@@ -82,7 +82,7 @@ ws.onopen = async () => {
     const state = evalResult.result.value;
     console.log('🔍 Elementos no DOM:', JSON.stringify(state, null, 2));
 
-    assert.strictEqual(state.version, '1.3.0-portal-subagent-inspector', 'Versão deve ser 1.3.0-portal-subagent-inspector');
+    assert.strictEqual(state.version, '1.4.0-subagent-isolation-compaction', 'Versão deve ser 1.4.0-subagent-isolation-compaction');
     assert.strictEqual(state.hasPopover, true, 'Popover deve existir');
     assert.strictEqual(state.isPopoverChildOfBody, true, 'Popover DEVE ser filho direto de document.body (portal)');
     assert.strictEqual(state.isPopoverNotChildOfWidget, true, 'Popover NÃO PODE ser filho de widget (evitar clipping)');

@@ -3,7 +3,7 @@
   const BREADCRUMB_WIDGET_ID = 'agy-breadcrumb-context-widget';
   const MODAL_ID = 'agy-context-inspector-modal';
   const POPOVER_ID = 'agy-zone-popover';
-  const VERSION = '1.3.0-portal-subagent-inspector';
+  const VERSION = '1.4.0-subagent-isolation-compaction';
 
   if (window.__agyWidgetVersion === VERSION && (document.getElementById(WIDGET_ID) || document.getElementById(BREADCRUMB_WIDGET_ID))) {
     return;
@@ -76,7 +76,6 @@
   };
 
   function detectModelName(rawModelId) {
-    // 1. Tenta ler diretamente do botão de seleção de modelo no DOM
     const btn = document.querySelector('button[data-testid="model-selector-trigger"]') ||
                 document.querySelector('[data-testid*="model"]');
     if (btn) {
@@ -91,7 +90,6 @@
       }
     }
 
-    // 2. Mapeamento de placeholders internos do Antigravity
     if (rawModelId && MODEL_NAMES[rawModelId]) {
       return MODEL_NAMES[rawModelId];
     }
@@ -199,7 +197,7 @@
   function formatBRL(valUSD) {
     if (!valUSD || isNaN(valUSD) || valUSD <= 0) return 'R$ 0,00';
     const brl = valUSD * 5.65;
-    if (brl < 0.01) return 'R$ ' + brl.toFixed(4).replace('.', ',');
+    if (brl < 0.01) return '< R$ 0,01';
     return 'R$ ' + brl.toFixed(2).replace('.', ',');
   }
 
@@ -219,34 +217,34 @@
     const smartWithoutCache = (smartTarget / 1000000) * smartInputPrice + smartCostOutput;
     const smartSaved = smartWithoutCache - smartTotal;
 
-    // Capacidade Máxima / Dumb Zone (1M tokens)
+    // Dumb Zone / Full Window (1M tokens)
     const rawTarget = 1000000;
     const rawCached = Math.round(rawTarget * ratio);
     const rawUncached = rawTarget - rawCached;
     const rawInputPrice = (pricing.id === 'gemini-pro') ? pricing.inputPricePerMHigh : pricing.inputPricePerM;
     const rawCostCached = (rawCached / 1000000) * pricing.cachePricePerM;
     const rawCostUncached = (rawUncached / 1000000) * rawInputPrice;
-    const rawCostOutput = (Math.max(output, 6000) / 1000000) * pricing.outputPricePerM;
+    const rawCostOutput = (output / 1000000) * pricing.outputPricePerM;
     const rawTotal = rawCostCached + rawCostUncached + rawCostOutput;
     const rawWithoutCache = (rawTarget / 1000000) * rawInputPrice + rawCostOutput;
     const rawSaved = rawWithoutCache - rawTotal;
 
     return {
       smart: {
-        target: smartTarget,
+        targetTokens: smartTarget,
         cachedTokens: smartCached,
         uncachedTokens: smartUncached,
         totalCost: smartTotal,
-        withoutCache: smartWithoutCache,
-        savedCost: smartSaved
+        savedCost: smartSaved,
+        withoutCache: smartWithoutCache
       },
       raw: {
-        target: rawTarget,
+        targetTokens: rawTarget,
         cachedTokens: rawCached,
         uncachedTokens: rawUncached,
         totalCost: rawTotal,
-        withoutCache: rawWithoutCache,
-        savedCost: rawSaved
+        savedCost: rawSaved,
+        withoutCache: rawWithoutCache
       }
     };
   }
@@ -263,6 +261,7 @@
 
   // Cache de contexto por cascadeId
   const contextCache = new Map();
+  window.__agyContextCache = contextCache;
 
   async function fetchContextDetails(cascadeId) {
     if (!cascadeId) return null;
@@ -277,7 +276,7 @@
         body: JSON.stringify({
           cascadeId: cascadeId,
           startIndex: 0,
-          endIndex: 500,
+          endIndex: 2000,
           metadata: { ideName: 'antigravity', extensionName: 'antigravity' }
         })
       });
@@ -291,6 +290,8 @@
 
       let latestUsage = null;
       let firstUsage = null;
+      let compactionCount = 0;
+      let checkpoints = [];
       const filesMap = new Map();
       const commandsList = [];
       let userChars = 0;
@@ -298,6 +299,16 @@
 
       for (let i = 0; i < steps.length; i++) {
         const s = steps[i];
+
+        // Detecção de Compactação automática do Antigravity
+        if (s.type === 'CORTEX_STEP_TYPE_CHECKPOINT' || s.checkpoint) {
+          compactionCount++;
+          checkpoints.push({
+            stepIndex: s.metadata?.sourceTrajectoryStepInfo?.stepIndex || i,
+            summary: s.checkpoint?.sessionSummary || null
+          });
+        }
+
         if (s.metadata?.modelUsage) {
           if (!firstUsage) firstUsage = s.metadata.modelUsage;
           latestUsage = s.metadata.modelUsage;
@@ -385,6 +396,8 @@
         cachePct: (cachedTokens + inputTokens) > 0 ? Math.round((cachedTokens / (cachedTokens + inputTokens)) * 100) : 0,
         pricing,
         costs,
+        compactionCount,
+        checkpoints,
         breakdown: {
           system: systemTokensEst,
           files: totalFilesTokens,
@@ -431,14 +444,17 @@
     </div>
   `;
 
-  // 3. SINGLETON POPOVER PORTADO DIRETAMENTE PARA O BODY (NÃO CORTADO POR OVERFLOW)
+  // 3. SINGLETON POPOVER PORTADO DIRETAMENTE PARA O BODY
   const popover = document.createElement('div');
   popover.id = POPOVER_ID;
   popover.style.cssText = 'display: none; position: fixed; width: 300px; background: var(--card, #1c1c1f); color: var(--foreground, #f2f2f2); border: 1px solid var(--border, rgba(255, 255, 255, 0.12)); border-radius: 10px; box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6), 0 3px 10px rgba(0, 0, 0, 0.4); padding: 12px; z-index: 99999999; font-family: var(--font-sans, system-ui, -apple-system, sans-serif); pointer-events: auto; box-sizing: border-box; font-size: 11.5px; line-height: 1.4;';
 
   popover.innerHTML = `
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-      <span id="agy-scope-title" style="font-weight: 600; font-size: 11px; opacity: 0.85; letter-spacing: 0.03em; max-width: 175px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">CONTEXT WINDOW</span>
+      <div style="display: flex; align-items: center; gap: 5px; max-width: 175px;">
+        <span id="agy-scope-title" style="font-weight: 600; font-size: 11px; opacity: 0.85; letter-spacing: 0.03em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">CONTEXT WINDOW</span>
+        <span id="agy-compaction-badge" style="display: none; font-size: 9px; font-weight: 700; padding: 1px 4px; border-radius: 3px; background: rgba(59, 130, 246, 0.2); color: #60a5fa; white-space: nowrap;" title="O Antigravity compactou o histórico automaticamente para manter respostas rápidas e sem alucinações">🔄 1x</span>
+      </div>
       <span id="agy-zone-tag" style="font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: rgba(34, 197, 94, 0.18); color: #22c55e; letter-spacing: 0.02em;">
         SMART ZONE ✓
       </span>
@@ -486,10 +502,11 @@
 
     <!-- SEÇÃO DINÂMICA DE SUBAGENTES (para a conversa principal) -->
     <div id="agy-subagents-section" style="display: none; padding-top: 6px; border-top: 1px solid var(--border, rgba(255,255,255,0.1)); margin-bottom: 6px;">
-      <div style="font-size: 10px; font-weight: 600; color: var(--muted-foreground, #999); text-transform: uppercase; margin-bottom: 4px; display: flex; justify-content: space-between;">
-        <span>Subagentes</span>
+      <div style="font-size: 10px; font-weight: 600; color: var(--muted-foreground, #999); text-transform: uppercase; margin-bottom: 2px; display: flex; justify-content: space-between;">
+        <span>Subagentes (Isolados)</span>
         <span id="agy-subagents-count" style="font-weight: 700;">0</span>
       </div>
+      <div style="font-size: 9.5px; color: var(--muted-foreground, #777); margin-bottom: 4px;">Contextos independentes (não somam na principal):</div>
       <div id="agy-subagents-list" style="display: flex; flex-direction: column; gap: 3px; font-size: 10.5px;"></div>
     </div>
 
@@ -511,7 +528,6 @@
     const rect = targetEl.getBoundingClientRect();
     const popWidth = 300;
 
-    // Clampeamento horizontal: nunca vaza pelas bordas da janela
     let left = rect.left + rect.width / 2 - popWidth / 2;
     left = Math.max(16, Math.min(window.innerWidth - popWidth - 16, left));
     popover.style.left = left + 'px';
@@ -520,12 +536,10 @@
     const arrowLeft = (rect.left + rect.width / 2) - left;
     const clampedArrowLeft = Math.max(14, Math.min(popWidth - 14, arrowLeft));
 
-    // Posicionamento vertical: calcula espaço disponível
     const spaceAbove = rect.top;
     const spaceBelow = window.innerHeight - rect.bottom;
 
     if (spaceAbove < 340 && spaceBelow >= 250) {
-      // Abre ABAIXO do alvo
       popover.style.top = (rect.bottom + 8) + 'px';
       popover.style.bottom = 'auto';
       if (arrow) {
@@ -539,7 +553,6 @@
         arrow.style.borderBottom = 'none';
       }
     } else {
-      // Abre ACIMA do alvo
       popover.style.bottom = (window.innerHeight - rect.top + 8) + 'px';
       popover.style.top = 'auto';
       if (arrow) {
@@ -561,7 +574,18 @@
 
     const scopeEl = document.getElementById('agy-scope-title');
     if (scopeEl) {
-      scopeEl.innerText = scopeTitle || (isSubagent ? 'SUBAGENTE CONTEXT' : 'CONTEXT WINDOW');
+      scopeEl.innerText = scopeTitle || (isSubagent ? 'SUBAGENTE' : 'CONTEXT WINDOW');
+    }
+
+    const compBadge = document.getElementById('agy-compaction-badge');
+    if (compBadge) {
+      if (data && data.compactionCount > 0) {
+        compBadge.style.display = 'inline-block';
+        compBadge.innerText = `🔄 ${data.compactionCount}x`;
+        compBadge.title = `O Antigravity compactou o histórico ${data.compactionCount}x para manter a atenção afiada do modelo. Contexto ativo: ${formatTokens(data.totalTokens)}.`;
+      } else {
+        compBadge.style.display = 'none';
+      }
     }
 
     if (!data || data.totalTokens === 0) {
@@ -599,8 +623,9 @@
     }
 
     const totalTokens = data.totalTokens;
-    const pct = Math.min(100, Math.round((totalTokens / SMART_LIMIT) * 1000) / 10);
-    const rawPct = Math.min(100, Math.round((totalTokens / RAW_LIMIT) * 1000) / 10);
+    const pct = Math.round((totalTokens / SMART_LIMIT) * 1000) / 10;
+    const visualPct = Math.min(100, Math.max(0, pct));
+    const rawPct = Math.round((totalTokens / RAW_LIMIT) * 1000) / 10;
     const zone = getZone(pct);
 
     const tagEl = document.getElementById('agy-zone-tag');
@@ -615,7 +640,7 @@
       tagEl.style.background = zone.bg;
     }
     if (barEl) {
-      barEl.style.width = pct + '%';
+      barEl.style.width = visualPct + '%';
       barEl.style.background = zone.color;
     }
     if (usedEl) {
@@ -728,6 +753,12 @@
           <span id="agy-modal-tag" style="font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; background: rgba(34, 197, 94, 0.18); color: #22c55e;">
             SMART ZONE ✓
           </span>
+          <span id="agy-modal-subagent-tag" style="display: none; font-size: 9.5px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: rgba(168, 85, 247, 0.2); color: #c084fc;">
+            🤖 SUBAGENTE
+          </span>
+          <span id="agy-modal-compaction-tag" style="display: none; font-size: 9.5px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: rgba(59, 130, 246, 0.2); color: #60a5fa;">
+            🔄 COMPACTADO
+          </span>
         </div>
 
         <!-- Seletor de Sessão / Escopo (Conversa Principal vs Subagentes) -->
@@ -820,7 +851,6 @@
   `;
   document.head.appendChild(styleEl);
 
-  // Inserção do modal no body
   document.body.appendChild(modal);
 
   function closeModal() {
@@ -858,8 +888,17 @@
         renderModalWithData(currentContextData, 'Conversa Principal');
       } else {
         const sub = latestSubagentsList.find(s => s.cascadeId === val);
-        if (sub && sub.details) {
-          renderModalWithData(sub.details, `🤖 ${sub.name}`);
+        const subDetails = sub?.details || contextCache.get(val);
+        const sName = sub?.name || sessionSelect.options[sessionSelect.selectedIndex]?.text?.replace(/^[🤖🌐\s]+/, '') || 'Subagente';
+        if (subDetails) {
+          renderModalWithData(subDetails, `🤖 ${sName}`);
+        } else {
+          renderModalWithData({ cascadeId: val, totalTokens: 1, filesCount: 0, commandsCount: 0, breakdown: { system: 0, files: 0, commands: 0, dialogue: 0 } }, `🤖 ${sName}`);
+          fetchContextDetails(val).then(res => {
+            if (res && sessionSelect.value === val) {
+              renderModalWithData(res, `🤖 ${sName}`);
+            }
+          });
         }
       }
     });
@@ -868,6 +907,47 @@
   function renderModalWithData(data, scopeName) {
     activeModalData = data;
     activeModalScope = scopeName || 'Conversa Principal';
+
+    const isSubagent = (data && currentContextData && data.cascadeId !== currentContextData.cascadeId) ||
+                       (scopeName && (scopeName.includes('🤖') || scopeName !== 'Conversa Principal'));
+
+    // Alterna a exibição da aba de subagentes (NUNCA mostrar aba subagentes dentro de um subagente!)
+    const tabSubBtn = document.getElementById('agy-tab-btn-subagents');
+    if (tabSubBtn) {
+      if (isSubagent) {
+        tabSubBtn.style.display = 'none';
+        if (activeTab === 'subagents') {
+          activeTab = 'overview';
+          modal.querySelectorAll('.agy-tab-btn').forEach(b => {
+            b.style.borderBottomColor = 'transparent';
+            b.style.color = 'var(--muted-foreground, #999)';
+          });
+          const ovBtn = document.getElementById('agy-tab-btn-overview');
+          if (ovBtn) {
+            ovBtn.style.borderBottomColor = '#22c55e';
+            ovBtn.style.color = '#22c55e';
+          }
+        }
+      } else {
+        tabSubBtn.style.display = 'inline-block';
+        const tabSubCount = document.getElementById('agy-tab-count-subagents');
+        if (tabSubCount) tabSubCount.innerText = String(latestSubagentsList.length);
+      }
+    }
+
+    const subTag = document.getElementById('agy-modal-subagent-tag');
+    if (subTag) subTag.style.display = isSubagent ? 'inline-block' : 'none';
+
+    const compTag = document.getElementById('agy-modal-compaction-tag');
+    if (compTag) {
+      if (data && data.compactionCount > 0) {
+        compTag.style.display = 'inline-block';
+        compTag.innerText = `COMPACTADO (${data.compactionCount}x)`;
+        compTag.title = `O Antigravity realizou ${data.compactionCount} compactação(ões) automática(s) de histórico nesta sessão para manter a atenção afiada do modelo.`;
+      } else {
+        compTag.style.display = 'none';
+      }
+    }
 
     const mTag = document.getElementById('agy-modal-tag');
     const mTotal = document.getElementById('agy-m-total');
@@ -889,7 +969,6 @@
 
     const tabFilesCount = document.getElementById('agy-tab-count-files');
     const tabCmdsCount = document.getElementById('agy-tab-count-commands');
-    const tabSubCount = document.getElementById('agy-tab-count-subagents');
 
     if (!data || data.totalTokens === 0) {
       if (mTag) {
@@ -916,15 +995,14 @@
 
       if (tabFilesCount) tabFilesCount.innerText = '0';
       if (tabCmdsCount) tabCmdsCount.innerText = '0';
-      if (tabSubCount) tabSubCount.innerText = String(latestSubagentsList.length);
 
       renderModalTab(activeTab, null);
       return;
     }
 
     const totalTokens = data.totalTokens;
-    const pct = Math.min(100, Math.round((totalTokens / SMART_LIMIT) * 1000) / 10);
-    const rawPct = Math.min(100, Math.round((totalTokens / RAW_LIMIT) * 1000) / 10);
+    const pct = Math.round((totalTokens / SMART_LIMIT) * 1000) / 10;
+    const rawPct = Math.round((totalTokens / RAW_LIMIT) * 1000) / 10;
     const zone = getZone(pct);
     const costs = data.costs || calculateCosts(data.inputTokens, data.cachedTokens, data.outputTokens, data.pricing || getModelPricing(data.latestUsage?.model, totalTokens));
 
@@ -955,10 +1033,12 @@
 
     if (mRawRatio) mRawRatio.innerText = `${formatTokens(totalTokens)} / 1.0M (${rawPct}% bruto)`;
 
-    // Barras segmentadas
-    const bSysPct = Math.min(100, (data.breakdown.system / totalTokens) * 100);
-    const bFilesPct = Math.min(100, (data.breakdown.files / totalTokens) * 100);
-    const bCmdsPct = Math.min(100, (data.breakdown.commands / totalTokens) * 100);
+    // Normalização das barras segmentadas de carga
+    const rawSum = (data.breakdown.system || 0) + (data.breakdown.files || 0) + (data.breakdown.commands || 0) + (data.breakdown.dialogue || 0);
+    const normBase = Math.max(totalTokens, rawSum, 1);
+    const bSysPct = Math.round(((data.breakdown.system || 0) / normBase) * 100);
+    const bFilesPct = Math.round(((data.breakdown.files || 0) / normBase) * 100);
+    const bCmdsPct = Math.round(((data.breakdown.commands || 0) / normBase) * 100);
     const bDiagPct = Math.max(0, 100 - (bSysPct + bFilesPct + bCmdsPct));
 
     if (bSys) bSys.style.width = bSysPct + '%';
@@ -968,7 +1048,6 @@
 
     if (tabFilesCount) tabFilesCount.innerText = String(data.filesCount);
     if (tabCmdsCount) tabCmdsCount.innerText = String(data.commandsCount);
-    if (tabSubCount) tabSubCount.innerText = String(latestSubagentsList.length);
 
     renderModalTab(activeTab, data);
   }
@@ -977,7 +1056,6 @@
     const targetData = data || currentContextData;
     const targetScope = scopeTitle || 'Conversa Principal';
 
-    // Popula as opções do seletor de sessão
     const select = modal.querySelector('#agy-session-select');
     if (select) {
       select.innerHTML = '';
@@ -995,6 +1073,8 @@
 
       if (selectedCascadeId && selectedCascadeId !== 'main') {
         select.value = selectedCascadeId;
+      } else if (data && currentContextData && data.cascadeId !== currentContextData.cascadeId) {
+        select.value = data.cascadeId;
       } else {
         select.value = 'main';
       }
@@ -1021,14 +1101,49 @@
       return;
     }
 
+    const isSubagent = (data && currentContextData && data.cascadeId !== currentContextData.cascadeId) ||
+                       (activeModalScope && (activeModalScope.includes('🤖') || activeModalScope !== 'Conversa Principal'));
+
     if (tab === 'overview') {
       container.innerHTML = `
         <div style="display: flex; flex-direction: column; gap: 12px;">
           
+          ${isSubagent ? `
+            <div style="padding: 10px 12px; background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.25); border-radius: 8px; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;">
+              <div style="display: flex; align-items: flex-start; gap: 8px;">
+                <span style="font-size: 16px;">🤖</span>
+                <div>
+                  <div style="font-weight: 600; color: #c084fc; font-size: 11.5px;">Contexto Isolado de Subagente</div>
+                  <div style="font-size: 10.5px; color: var(--muted-foreground, #aaa); margin-top: 2px; line-height: 1.4;">
+                    Este subagente opera em seu próprio processo independente. As leituras e comandos abaixo pertencem exclusivamente a ele e <strong>não pesam na context window da Conversa Principal</strong>.
+                  </div>
+                </div>
+              </div>
+              <button id="agy-btn-back-main" type="button" style="background: rgba(168, 85, 247, 0.15); border: 1px solid rgba(168, 85, 247, 0.3); color: #c084fc; border-radius: 6px; padding: 4px 8px; font-size: 10px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: background 0.15s ease;">
+                ⬅ Conversa Principal
+              </button>
+            </div>
+          ` : ''}
+
+          ${data.compactionCount > 0 ? `
+            <div style="padding: 10px 12px; background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.25); border-radius: 8px; display: flex; align-items: flex-start; gap: 10px;">
+              <span style="font-size: 16px;">🔄</span>
+              <div>
+                <div style="font-weight: 600; color: #60a5fa; font-size: 11.5px; display: flex; align-items: center; gap: 6px;">
+                  <span>Histórico Compactado pelo Antigravity (${data.compactionCount}x)</span>
+                  <span style="font-size: 9.5px; padding: 1px 5px; border-radius: 3px; background: rgba(59, 130, 246, 0.2); color: #93c5fd;">Normal</span>
+                </div>
+                <div style="font-size: 10.5px; color: var(--muted-foreground, #aaa); margin-top: 2px; line-height: 1.4;">
+                  Ao atingir o limite operacional (~250k–270k tokens), o Antigravity resume a conversa anterior em um checkpoint para evitar perda de atenção e alucinações. <strong>O valor exibido (${formatTokens(data.totalTokens)}) representa o contexto ativo pós-compactação.</strong>
+                </div>
+              </div>
+            </div>
+          ` : ''}
+
           <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border, rgba(255,255,255,0.08)); border-radius: 8px; padding: 12px;">
             <div style="font-weight: 600; margin-bottom: 8px; font-size: 12px; display: flex; justify-content: space-between;">
               <span>Detalhamento por Categoria de Carga</span>
-              <span style="color: var(--muted-foreground, #999); font-weight: 400;">Total: ${formatTokens(data.totalTokens)} tokens</span>
+              <span style="color: var(--muted-foreground, #999); font-weight: 400;">Total Ativo: ${formatTokens(data.totalTokens)} tokens</span>
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
               <div style="padding: 8px; background: rgba(168, 85, 247, 0.08); border-radius: 6px; border-left: 3px solid #a855f7;">
@@ -1050,152 +1165,133 @@
             </div>
           </div>
 
-          <!-- Context Caching Info -->
-          <div style="background: rgba(56, 189, 248, 0.06); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 8px; padding: 10px 12px; display: flex; align-items: center; justify-content: space-between;">
-            <div>
-              <div style="font-weight: 600; color: #38bdf8; font-size: 11.5px;">⚡ Gemini Context Caching Ativo (${data.cachePct}%)</div>
-              <div style="font-size: 10.5px; color: var(--muted-foreground, #bbb); margin-top: 2px;">${formatTokens(data.cachedTokens)} dos tokens desta sessão foram servidos pelo cache prefixado do Google, garantindo respostas rápidas e sem custo redundante de reprocessamento.</div>
+          <!-- Top 5 Arquivos -->
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border, rgba(255,255,255,0.08)); border-radius: 8px; padding: 12px;">
+            <div style="font-weight: 600; margin-bottom: 6px; font-size: 12px; display: flex; justify-content: space-between;">
+              <span>Principais Consumidores de Contexto</span>
+              <button id="agy-link-all-files" type="button" style="background: none; border: none; color: #38bdf8; font-size: 10.5px; cursor: pointer; text-decoration: underline;">Ver todos (${data.filesCount})</button>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              ${data.files.slice(0, 5).map((f, idx) => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 6px; background: rgba(255,255,255,0.02); border-radius: 4px; font-size: 11px;">
+                  <div style="display: flex; align-items: center; gap: 6px; overflow: hidden;">
+                    <span style="opacity: 0.6; font-size: 10px;">#${idx + 1}</span>
+                    <span style="font-weight: 500; color: var(--foreground, #fff); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${f.path}">${f.name}</span>
+                    <span style="font-size: 9.5px; opacity: 0.6;">(${formatBytes(f.bytes)})</span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+                    <span style="color: #60a5fa; font-weight: 600; font-variant-numeric: tabular-nums;">~${formatTokens(f.tokensEst)} tokens</span>
+                    <span style="font-size: 9px; opacity: 0.6; background: rgba(255,255,255,0.06); padding: 1px 4px; border-radius: 3px;">${f.count}x</span>
+                  </div>
+                </div>
+              `).join('')}
+              ${data.files.length === 0 ? '<div style="color: var(--muted-foreground, #888); font-size: 11px; text-align: center; padding: 10px;">Nenhum arquivo lido ainda.</div>' : ''}
             </div>
           </div>
 
         </div>
       `;
+
+      container.querySelector('#agy-btn-back-main')?.addEventListener('click', () => {
+        const select = modal.querySelector('#agy-session-select');
+        if (select) select.value = 'main';
+        renderModalWithData(currentContextData, 'Conversa Principal');
+      });
+
+      container.querySelector('#agy-link-all-files')?.addEventListener('click', () => {
+        const btn = document.querySelector('.agy-tab-btn[data-tab="files"]');
+        if (btn) btn.click();
+      });
+
     } else if (tab === 'costs') {
       const pricing = data.pricing || getModelPricing(data.latestUsage?.model, data.totalTokens);
       const costs = data.costs || calculateCosts(data.inputTokens, data.cachedTokens, data.outputTokens, pricing);
       const projections = calculateProjections(data.cachePct / 100, data.outputTokens, pricing);
 
       container.innerHTML = `
-        <div style="display: flex; flex-direction: column; gap: 12px; line-height: 1.45;">
+        <div style="display: flex; flex-direction: column; gap: 12px;">
           
-          <!-- Nota Explicativa -->
-          <div style="padding: 10px 14px; background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.22); border-radius: 8px; display: flex; gap: 10px; align-items: flex-start;">
-            <span style="font-size: 17px; line-height: 1.2;">ℹ️</span>
-            <div style="font-size: 11px; color: var(--foreground, #ddd);">
-              <span style="font-weight: 700; color: #60a5fa;">Plano Google AI Pro</span> (cota de assinatura sem custo avulso).
-              <div style="color: var(--muted-foreground, #bbb); margin-top: 2px;">
-                Você está utilizando o plano Google AI Pro (cota de assinatura sem custo avulso). Estes valores mostram quanto esta sessão consumiria se cobrada diretamente via API/Créditos (Google AI Studio / Vertex AI).
+          <!-- Callout sobre o Modelo e Plano -->
+          <div style="padding: 10px 12px; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; display: flex; align-items: flex-start; gap: 10px;">
+            <span style="font-size: 16px;">ℹ️</span>
+            <div>
+              <div style="font-weight: 600; color: #38bdf8; font-size: 11.5px;">Plano Google AI Pro (cota de assinatura sem custo adicional por token)</div>
+              <div style="font-size: 10.5px; color: var(--muted-foreground, #aaa); margin-top: 2px; line-height: 1.4;">
+                Esta estimativa reflete o valor de mercado via <strong>${pricing.provider}</strong> para o modelo <strong>${pricing.displayName}</strong>. Se você usa o plano Gemini Pro / Antigravity com cota inclusa, seu custo marginal direto é R$ 0,00 até o limite da sua cota.
               </div>
             </div>
           </div>
 
-          <!-- Card do Modelo e Resumo de Custo -->
-          <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border, rgba(255,255,255,0.08)); border-radius: 8px; padding: 12px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border, rgba(255,255,255,0.08));">
-              <div>
-                <span style="font-size: 10px; text-transform: uppercase; font-weight: 600; color: var(--muted-foreground, #888); letter-spacing: 0.03em;">Modelo & Tarifário Ativo</span>
-                <div style="font-size: 13.5px; font-weight: 700; color: var(--foreground, #fff); margin-top: 2px; display: flex; align-items: center; gap: 6px;">
-                  <span>🤖 ${pricing.displayName}</span>
-                  <span style="font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.08); color: var(--muted-foreground, #bbb);">${pricing.provider}</span>
-                </div>
+          <!-- Cartão de Economia com Cache de Contexto -->
+          <div style="background: rgba(34, 197, 94, 0.06); border: 1px solid rgba(34, 197, 94, 0.25); border-radius: 8px; padding: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px;">
+              <span style="font-weight: 600; color: #22c55e; font-size: 12px;">⚡ Eficiência do Gemini Context Caching</span>
+              <span style="font-size: 11px; color: #22c55e; font-weight: 700;">${data.cachePct}% em Cache Rápido</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 8px;">
+              <div style="padding: 8px; background: rgba(0,0,0,0.25); border-radius: 6px;">
+                <div style="font-size: 10px; color: var(--muted-foreground, #999);">Custo Atual com Cache</div>
+                <div style="font-size: 15px; font-weight: 700; color: #22c55e; margin-top: 2px;">${formatUSD(costs.totalCost)}</div>
+                <div style="font-size: 9.5px; color: var(--muted-foreground, #888);">${formatBRL(costs.totalCost)}</div>
               </div>
-              <div style="text-align: right;">
-                <span style="font-size: 10px; text-transform: uppercase; font-weight: 600; color: var(--muted-foreground, #888); letter-spacing: 0.03em;">Custo desta Janela</span>
-                <div style="font-size: 17px; font-weight: 800; color: #22c55e; font-variant-numeric: tabular-nums; margin-top: 1px;">
-                  ~${formatUSD(costs.totalCost)} <span style="font-size: 11px; font-weight: 600; color: var(--muted-foreground, #aaa);">(${formatBRL(costs.totalCost)})</span>
-                </div>
+              <div style="padding: 8px; background: rgba(0,0,0,0.25); border-radius: 6px;">
+                <div style="font-size: 10px; color: var(--muted-foreground, #999);">Sem Cache (Tarifa Cheia)</div>
+                <div style="font-size: 15px; font-weight: 700; color: var(--muted-foreground, #aaa); margin-top: 2px;">${formatUSD(costs.costWithoutCache)}</div>
+                <div style="font-size: 9.5px; color: var(--muted-foreground, #888);">${formatBRL(costs.costWithoutCache)}</div>
+              </div>
+              <div style="padding: 8px; background: rgba(34, 197, 94, 0.12); border-radius: 6px; border: 1px solid rgba(34, 197, 94, 0.3);">
+                <div style="font-size: 10px; color: #22c55e; font-weight: 600;">Economia Real Obtida</div>
+                <div style="font-size: 15px; font-weight: 700; color: #22c55e; margin-top: 2px;">-${formatUSD(costs.savedCost)}</div>
+                <div style="font-size: 9.5px; color: #22c55e;">-${formatBRL(costs.savedCost)} (${pricing.cacheDiscountPct}% off)</div>
               </div>
             </div>
+          </div>
 
-            <!-- Tabela de Decomposição de Custos -->
-            <div style="display: flex; flex-direction: column; gap: 4px;">
-              <div style="display: grid; grid-template-columns: 2fr 110px 120px 120px; padding: 6px 8px; font-weight: 600; font-size: 10px; color: var(--muted-foreground, #888); border-bottom: 1px solid var(--border, rgba(255,255,255,0.1));">
-                <span>CATEGORIA DE TOKEN</span>
-                <span style="text-align: right;">QUANTIDADE</span>
-                <span style="text-align: right;">TAXA / 1M TOKENS</span>
-                <span style="text-align: right;">SUBTOTAL ESTIMADO</span>
-              </div>
-
-              <!-- Uncached Input -->
-              <div class="agy-table-row" style="display: grid; grid-template-columns: 2fr 110px 120px 120px; padding: 7px 8px; border-radius: 6px; font-size: 11px; align-items: center; transition: background 0.1s;">
-                <div>
-                  <span style="font-weight: 600; color: var(--foreground, #fff);">Tokens Uncached (Entrada fresca)</span>
-                  <div style="font-size: 9.5px; color: var(--muted-foreground, #888);">Novos prompts, regras e arquivos lidos</div>
-                </div>
-                <span style="text-align: right; font-variant-numeric: tabular-nums; color: var(--foreground, #ddd);">${formatTokens(data.inputTokens)}</span>
-                <span style="text-align: right; font-variant-numeric: tabular-nums; color: var(--muted-foreground, #aaa);">$${pricing.inputPricePerM.toFixed(2)}</span>
-                <span style="text-align: right; font-weight: 600; color: var(--foreground, #fff); font-variant-numeric: tabular-nums;">${formatUSD(costs.costInput)}</span>
-              </div>
-
-              <!-- Cached Read -->
-              <div class="agy-table-row" style="display: grid; grid-template-columns: 2fr 110px 120px 120px; padding: 7px 8px; border-radius: 6px; font-size: 11px; align-items: center; background: rgba(56, 189, 248, 0.05); transition: background 0.1s;">
-                <div>
-                  <span style="font-weight: 600; color: #38bdf8;">Tokens em Cache (Reaproveitados)</span>
-                  <div style="font-size: 9.5px; color: #38bdf8; opacity: 0.85;">Reaproveitados com ${pricing.cacheDiscountPct}% de desconto</div>
-                </div>
-                <span style="text-align: right; font-variant-numeric: tabular-nums; color: #38bdf8; font-weight: 600;">${formatTokens(data.cachedTokens)}</span>
+          <!-- Tabela de Preços e Projeções de Zona -->
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border, rgba(255,255,255,0.08)); border-radius: 8px; padding: 12px;">
+            <div style="font-weight: 600; margin-bottom: 8px; font-size: 12px;">Tarifas de Referência (${pricing.displayName})</div>
+            <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; font-size: 10.5px; padding: 4px 6px; color: var(--muted-foreground, #888); border-bottom: 1px solid var(--border, rgba(255,255,255,0.08)); font-weight: 600;">
+              <span>CATEGORIA DE TOKEN</span>
+              <span style="text-align: right;">QUANTIDADE</span>
+              <span style="text-align: right;">TARIFA / 1M</span>
+              <span style="text-align: right;">TOTAL ESTIMADO</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px; margin-top: 4px; font-size: 11px;">
+              <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; padding: 3px 6px; align-items: center;">
+                <span>⚡ Entrada em Cache (Cache Read)</span>
+                <span style="text-align: right; font-variant-numeric: tabular-nums;">${formatTokens(data.cachedTokens)}</span>
                 <span style="text-align: right; font-variant-numeric: tabular-nums; color: #38bdf8;">$${pricing.cachePricePerM.toFixed(4)}</span>
-                <span style="text-align: right; font-weight: 600; color: #38bdf8; font-variant-numeric: tabular-nums;">${formatUSD(costs.costCache)}</span>
+                <span style="text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; color: #38bdf8;">${formatUSD(costs.costCache)}</span>
               </div>
-
-              <!-- Output -->
-              <div class="agy-table-row" style="display: grid; grid-template-columns: 2fr 110px 120px 120px; padding: 7px 8px; border-radius: 6px; font-size: 11px; align-items: center; transition: background 0.1s;">
-                <div>
-                  <span style="font-weight: 600; color: #c084fc;">Tokens de Saída (Respostas geradas)</span>
-                  <div style="font-size: 9.5px; color: var(--muted-foreground, #888);">Respostas do assistente e cadeias de pensamento</div>
-                </div>
-                <span style="text-align: right; font-variant-numeric: tabular-nums; color: var(--foreground, #ddd);">${formatTokens(data.outputTokens)}</span>
-                <span style="text-align: right; font-variant-numeric: tabular-nums; color: var(--muted-foreground, #aaa);">$${pricing.outputPricePerM.toFixed(2)}</span>
-                <span style="text-align: right; font-weight: 600; color: var(--foreground, #fff); font-variant-numeric: tabular-nums;">${formatUSD(costs.costOutput)}</span>
+              <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; padding: 3px 6px; align-items: center;">
+                <span>📥 Entrada sem Cache (Prompt Tokens)</span>
+                <span style="text-align: right; font-variant-numeric: tabular-nums;">${formatTokens(data.inputTokens)}</span>
+                <span style="text-align: right; font-variant-numeric: tabular-nums;">$${pricing.inputPricePerM.toFixed(2)}</span>
+                <span style="text-align: right; font-variant-numeric: tabular-nums; font-weight: 600;">${formatUSD(costs.costInput)}</span>
               </div>
-            </div>
-
-            <!-- Balanço de Economia Real -->
-            <div style="margin-top: 12px; padding: 10px 14px; background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.28); border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
-              <div>
-                <div style="font-weight: 700; color: #22c55e; font-size: 12px; display: flex; align-items: center; gap: 6px;">
-                  <span>🎉 Economia Real Gerada pelo Cache:</span>
-                  <span style="font-size: 13.5px; font-weight: 800;">-${formatUSD(costs.savedCost)}</span>
-                  <span style="font-size: 11px; opacity: 0.9;">(${formatBRL(costs.savedCost)})</span>
-                </div>
-                <div style="font-size: 10px; color: var(--muted-foreground, #aaa); margin-top: 2px;">
-                  Sem o cache de contexto, o custo seria de <strong>${formatUSD(costs.costWithoutCache)}</strong> (${formatBRL(costs.costWithoutCache)}) vs <strong>${formatUSD(costs.totalCost)}</strong> efetivos.
-                </div>
-              </div>
-              <div style="background: rgba(34, 197, 94, 0.22); color: #22c55e; font-weight: 700; font-size: 11px; padding: 4px 10px; border-radius: 6px; white-space: nowrap;">
-                -${pricing.cacheDiscountPct}% no Cache
+              <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; padding: 3px 6px; align-items: center;">
+                <span>📤 Saída / Geração (Output Tokens)</span>
+                <span style="text-align: right; font-variant-numeric: tabular-nums;">${formatTokens(data.outputTokens)}</span>
+                <span style="text-align: right; font-variant-numeric: tabular-nums;">$${pricing.outputPricePerM.toFixed(2)}</span>
+                <span style="text-align: right; font-variant-numeric: tabular-nums; font-weight: 600;">${formatUSD(costs.costOutput)}</span>
               </div>
             </div>
-
           </div>
 
-          <!-- Projeção de Escala de Contexto -->
+          <!-- Projeção Smart Zone vs Dumb Zone -->
           <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border, rgba(255,255,255,0.08)); border-radius: 8px; padding: 12px;">
-            <div style="font-weight: 600; font-size: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
-              <span>📈 Projeção de Custos por Patamar de Contexto</span>
-              <span style="color: var(--muted-foreground, #999); font-size: 10.5px;">Base: ${data.cachePct}% em cache</span>
-            </div>
-            
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-              
-              <!-- Projeção 250k (Smart Zone) -->
-              <div style="padding: 10px 12px; background: rgba(34, 197, 94, 0.05); border: 1px solid rgba(34, 197, 94, 0.18); border-radius: 8px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                  <span style="font-weight: 700; color: #22c55e; font-size: 11.5px;">Smart Zone (250k tokens)</span>
-                  <span style="font-size: 9.5px; font-weight: 700; padding: 1px 6px; border-radius: 3px; background: rgba(34, 197, 94, 0.2); color: #22c55e;">Qualidade Alta</span>
-                </div>
-                <div style="font-size: 15px; font-weight: 800; color: var(--foreground, #fff); font-variant-numeric: tabular-nums; margin: 4px 0;">
-                  ~${formatUSD(projections.smart.totalCost)} <span style="font-size: 11px; font-weight: normal; color: var(--muted-foreground, #aaa);">(${formatBRL(projections.smart.totalCost)})</span>
-                </div>
-                <div style="font-size: 10px; color: var(--muted-foreground, #aaa); line-height: 1.35;">
-                  Sem cache: ${formatUSD(projections.smart.withoutCache)} | <span style="color: #22c55e; font-weight: 600;">Economia: -${formatUSD(projections.smart.savedCost)}</span>
-                </div>
+            <div style="font-weight: 600; margin-bottom: 6px; font-size: 12px;">Projeção de Custo por Janela de Operação</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px;">
+              <div style="padding: 10px; background: rgba(34, 197, 94, 0.08); border-radius: 6px; border-left: 3px solid #22c55e;">
+                <div style="font-weight: 600; color: #22c55e; font-size: 11px;">Smart Zone (250k tokens)</div>
+                <div style="font-size: 16px; font-weight: 700; color: #22c55e; margin: 3px 0;">${formatUSD(projections.smart.totalCost)} <span style="font-size: 10px; font-weight: 400; color: var(--muted-foreground, #aaa);">(${formatBRL(projections.smart.totalCost)})</span></div>
+                <div style="font-size: 10px; color: var(--muted-foreground, #aaa);">Máxima precisão de raciocínio, sem alucinação e com tempo de resposta ultrarrápido.</div>
               </div>
-
-              <!-- Projeção 1M (Raw Limit) -->
-              <div style="padding: 10px 12px; background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.18); border-radius: 8px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                  <span style="font-weight: 700; color: #ef4444; font-size: 11.5px;">Capacidade Máxima (1.0M tokens)</span>
-                  <span style="font-size: 9.5px; font-weight: 700; padding: 1px 6px; border-radius: 3px; background: rgba(239, 68, 68, 0.2); color: #ef4444;">Dumb Zone</span>
-                </div>
-                <div style="font-size: 15px; font-weight: 800; color: var(--foreground, #fff); font-variant-numeric: tabular-nums; margin: 4px 0;">
-                  ~${formatUSD(projections.raw.totalCost)} <span style="font-size: 11px; font-weight: normal; color: var(--muted-foreground, #aaa);">(${formatBRL(projections.raw.totalCost)})</span>
-                </div>
-                <div style="font-size: 10px; color: var(--muted-foreground, #aaa); line-height: 1.35;">
-                  Sem cache: ${formatUSD(projections.raw.withoutCache)} | <span style="color: #22c55e; font-weight: 600;">Economia: -${formatUSD(projections.raw.savedCost)}</span>
-                </div>
+              <div style="padding: 10px; background: rgba(239, 68, 68, 0.08); border-radius: 6px; border-left: 3px solid #ef4444;">
+                <div style="font-weight: 600; color: #ef4444; font-size: 11px;">Dumb Zone / Limite Físico (1.0M tokens)</div>
+                <div style="font-size: 16px; font-weight: 700; color: #ef4444; margin: 3px 0;">${formatUSD(projections.raw.totalCost)} <span style="font-size: 10px; font-weight: 400; color: var(--muted-foreground, #aaa);">(${formatBRL(projections.raw.totalCost)})</span></div>
+                <div style="font-size: 10px; color: var(--muted-foreground, #aaa);">Aumento de latência e degradação atencional progressiva. Recomendado reiniciar conversa.</div>
               </div>
-
             </div>
           </div>
 
@@ -1251,7 +1347,6 @@
         </div>
       `;
     } else if (tab === 'subagents') {
-      const isViewingSubagent = activeModalData && activeModalData !== currentContextData;
       if (latestSubagentsList.length === 0) {
         container.innerHTML = `<div style="text-align:center; padding: 30px; color: var(--muted-foreground, #888);">Nenhum subagente foi criado a partir desta sessão.</div>`;
         return;
@@ -1259,11 +1354,21 @@
 
       container.innerHTML = `
         <div style="display: flex; flex-direction: column; gap: 8px;">
-          <div style="font-size: 11px; color: var(--muted-foreground, #aaa); margin-bottom: 4px;">
-            ${isViewingSubagent 
-              ? 'Você está inspecionando um subagente. Abaixo estão todos os subagentes ativos na árvore desta tarefa:' 
-              : 'Subagentes operam com seus próprios contextos em paralelo, preservando a janela de contexto da conversa principal. Clique em qualquer subagente para inspecionar seus detalhes:'}
+          
+          <div style="padding: 10px 12px; background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.25); border-radius: 8px; display: flex; align-items: flex-start; gap: 10px;">
+            <span style="font-size: 16px;">🛡️</span>
+            <div>
+              <div style="font-weight: 600; color: #4ade80; font-size: 11.5px;">Garantia de Isolamento de Contexto</div>
+              <div style="font-size: 10.5px; color: var(--muted-foreground, #aaa); margin-top: 2px; line-height: 1.4;">
+                Cada subagente opera com uma context window própria. O consumo de tokens mostrado em cada card abaixo é exclusivo do respectivo subagente e <strong>NÃO é somado à context window da Conversa Principal</strong>.
+              </div>
+            </div>
           </div>
+
+          <div style="font-size: 11px; color: var(--muted-foreground, #aaa); margin-bottom: 2px;">
+            Clique em qualquer subagente abaixo para inspecionar seus arquivos lidos, comandos e métricas:
+          </div>
+
           ${latestSubagentsList.map(s => {
             const isCurrent = activeModalData && activeModalData.cascadeId === s.cascadeId;
             return `
@@ -1307,8 +1412,8 @@
       container.innerHTML = `
         <div style="display: flex; flex-direction: column; gap: 10px; line-height: 1.5; color: var(--foreground, #ddd);">
           <div style="padding: 10px; background: rgba(34, 197, 94, 0.08); border-radius: 6px; border-left: 3px solid #22c55e;">
-            <div style="font-weight: 600; color: #22c55e; margin-bottom: 2px;">🎯 Por que manter na Smart Zone (&lt; 250k tokens)?</div>
-            <div style="font-size: 11px;">Modelos de 1M+ suportam contextos massivos, mas a retenção de detalhes finos e a precisão do raciocínio são significativamente superiores até 250k tokens. Acima desse patamar ("Atenção" e "Dumb Zone"), pode ocorrer degradação atencional ("needle in a haystack").</div>
+            <div style="font-weight: 600; color: #22c55e; margin-bottom: 2px;">🎯 Por que manter na Smart Zone (< 250k tokens)?</div>
+            <div style="font-size: 11px;">Modelos de 1M+ suportam contextos massivos, mas a retenção de detalhes finos e a precisão do raciocínio são significativamente superiores até 250k tokens. Acima desse patamar ("Atenção" e "Dumb Zone"), pode ocorrer degradação atencional ("needle in a haystack"). Ao atingir ~250k, o Antigravity pode executar uma compactação automática para proteger o contexto.</div>
           </div>
 
           <div style="padding: 10px; background: rgba(59, 130, 246, 0.08); border-radius: 6px; border-left: 3px solid #3b82f6;">
@@ -1316,6 +1421,7 @@
             <ul style="margin: 4px 0 0 16px; padding: 0; font-size: 10.5px;">
               <li>Prefira ler apenas fatias de arquivos com StartLine e EndLine em vez de arquivos inteiros de milhares de linhas.</li>
               <li>Evite comandos de terminal com saídas gigantescas desnecessárias (use grep, head, tail).</li>
+              <li>Delegue tarefas pesadas para <strong>Subagentes</strong> — eles rodam em contexto isolado e não sobrecarregam a conversa principal.</li>
               <li>Ao concluir um objetivo ou mudar de assunto, inicie uma <strong>Nova Conversa</strong> com contexto 100% renovado.</li>
             </ul>
           </div>
@@ -1325,38 +1431,50 @@
   }
 
   // 6. EVENTOS DE HOVER E CLIQUE NOS WIDGETS
-  widget.addEventListener('mouseenter', () => {
-    widget.style.backgroundColor = 'var(--secondary, rgba(255, 255, 255, 0.08))';
-    showPopover(widget, currentContextData, 'CONTEXT WINDOW', false);
-  });
-  widget.addEventListener('mouseleave', () => {
-    widget.style.backgroundColor = 'transparent';
-    scheduleHidePopover();
-  });
-  widget.addEventListener('click', (e) => {
-    e.stopPropagation();
-    scheduleHidePopover();
-    openModal(currentContextData, 'Conversa Principal', 'main');
-  });
-
   function getActiveBreadcrumbSubagent() {
     const breadcrumbs = Array.from(document.querySelectorAll('[data-testid="breadcrumb-segment"]'));
-    if (breadcrumbs.length === 0) return null;
+    if (breadcrumbs.length <= 2) return null; // [workspace, Task Title]
     const last = breadcrumbs[breadcrumbs.length - 1];
     const text = (last?.innerText || '').trim().toLowerCase();
-    if (!text) return null;
+    if (!text || text === 'workspace') return null;
 
     return latestSubagentsList.find(s => {
-      const sName = s.name.toLowerCase();
+      const sName = (s.name || '').toLowerCase();
       return sName === text || text.includes(sName) || sName.includes(text);
     }) || null;
   }
 
+  widget.addEventListener('mouseenter', () => {
+    widget.style.backgroundColor = 'var(--secondary, rgba(255, 255, 255, 0.08))';
+    const activeSub = getActiveBreadcrumbSubagent();
+    if (activeSub && activeSub.details) {
+      showPopover(widget, activeSub.details, `🤖 SUBAGENTE: ${activeSub.name}`, true);
+    } else {
+      showPopover(widget, currentContextData, 'CONTEXT WINDOW', false);
+    }
+  });
+
+  widget.addEventListener('mouseleave', () => {
+    widget.style.backgroundColor = 'transparent';
+    scheduleHidePopover();
+  });
+
+  widget.addEventListener('click', (e) => {
+    e.stopPropagation();
+    scheduleHidePopover();
+    const activeSub = getActiveBreadcrumbSubagent();
+    if (activeSub && activeSub.details) {
+      openModal(activeSub.details, `🤖 ${activeSub.name}`, activeSub.cascadeId);
+    } else {
+      openModal(currentContextData, 'Conversa Principal', 'main');
+    }
+  });
+
   breadcrumbWidget.addEventListener('mouseenter', () => {
     breadcrumbWidget.style.backgroundColor = 'var(--secondary, rgba(255, 255, 255, 0.08))';
-    const sub = getActiveBreadcrumbSubagent();
-    if (sub && sub.details) {
-      showPopover(breadcrumbWidget, sub.details, `🤖 SUBAGENTE: ${sub.name}`, true);
+    const activeSub = getActiveBreadcrumbSubagent();
+    if (activeSub && activeSub.details) {
+      showPopover(breadcrumbWidget, activeSub.details, `🤖 SUBAGENTE: ${activeSub.name}`, true);
     } else {
       showPopover(breadcrumbWidget, currentContextData, 'CONTEXT WINDOW', false);
     }
@@ -1370,9 +1488,9 @@
   breadcrumbWidget.addEventListener('click', (e) => {
     e.stopPropagation();
     scheduleHidePopover();
-    const sub = getActiveBreadcrumbSubagent();
-    if (sub && sub.details) {
-      openModal(sub.details, `🤖 ${sub.name}`, sub.cascadeId);
+    const activeSub = getActiveBreadcrumbSubagent();
+    if (activeSub && activeSub.details) {
+      openModal(activeSub.details, `🤖 ${activeSub.name}`, activeSub.cascadeId);
     } else {
       openModal(currentContextData, 'Conversa Principal', 'main');
     }
@@ -1380,7 +1498,6 @@
 
   // 7. MONTAGEM DOS WIDGETS NO DOM
   function ensureWidgetMounted() {
-    // 1. Widget principal ao lado do seletor de modelos no rodapé
     const modelTrigger = document.querySelector('button[data-testid="model-selector-trigger"]');
     if (modelTrigger && modelTrigger.parentElement) {
       if (widget.parentElement !== modelTrigger.parentElement || widget.previousElementSibling !== modelTrigger) {
@@ -1390,7 +1507,6 @@
       widget.remove();
     }
 
-    // 2. Widget de breadcrumb no topo da janela / visualização do subagente
     const breadcrumbs = Array.from(document.querySelectorAll('[data-testid="breadcrumb-segment"]'));
     if (breadcrumbs.length > 0) {
       const last = breadcrumbs[breadcrumbs.length - 1];
@@ -1423,7 +1539,6 @@
       populatePopoverData(null, 'CONTEXT WINDOW', false);
     }
 
-    // Remove badges órfãs de subagentes anteriores
     document.querySelectorAll('.agy-subagent-badge').forEach(b => b.remove());
 
     if (modal.style.display === 'flex') {
@@ -1441,12 +1556,13 @@
       if (!cascadeId) continue;
 
       const details = await fetchContextDetails(cascadeId);
-      const name = node.querySelector('span')?.innerText?.trim() || 'Subagente';
+      const name = (node.querySelector('span')?.innerText || '').split('\n')[0].trim() || 'Subagente';
       const totalTokens = details?.totalTokens || 0;
-      const pct = Math.min(100, Math.round((totalTokens / SMART_LIMIT) * 1000) / 10);
+      const pct = Math.round((totalTokens / SMART_LIMIT) * 1000) / 10;
+      const visualPct = Math.min(100, Math.max(0, pct));
       const zone = getZone(pct);
 
-      const subItem = { name, cascadeId, details, totalTokens, pct, zone };
+      const subItem = { name, cascadeId, details, totalTokens, pct, visualPct, zone };
       subagentsList.push(subItem);
 
       let badge = node.querySelector('.agy-subagent-badge');
@@ -1518,26 +1634,34 @@
 
     currentContextData = details;
 
-    const totalTokens = details.totalTokens;
-    const pct = Math.min(100, Math.round((totalTokens / SMART_LIMIT) * 1000) / 10);
-    const rawPct = Math.min(100, Math.round((totalTokens / RAW_LIMIT) * 1000) / 10);
+    const activeSub = getActiveBreadcrumbSubagent();
+    const isInsideSubagent = !!(activeSub && activeSub.details);
+    const activeData = isInsideSubagent ? activeSub.details : details;
+    const activeScope = isInsideSubagent ? `🤖 ${activeSub.name}` : 'Conversa Principal';
+
+    const totalTokens = activeData.totalTokens;
+    const pct = Math.round((totalTokens / SMART_LIMIT) * 1000) / 10;
+    const visualPct = Math.min(100, Math.max(0, pct));
+    const rawPct = Math.round((totalTokens / RAW_LIMIT) * 1000) / 10;
     const zone = getZone(pct);
 
     // Atualiza anel SVG do widget principal
     const ring = document.getElementById('agy-zone-ring');
-    const offset = Math.max(0, CIRCLE_C - (pct / 100) * CIRCLE_C);
+    const offset = Math.max(0, CIRCLE_C - (visualPct / 100) * CIRCLE_C);
     if (ring) {
-      ring.style.stroke = zone.color;
+      ring.style.stroke = isInsideSubagent ? '#a855f7' : zone.color;
       ring.style.strokeDashoffset = offset;
     }
-    widget.title = `Context Window: ${formatTokens(totalTokens)} / 250k (${pct}%) — ${zone.tag}`;
+    widget.title = isInsideSubagent
+      ? `Subagente ${activeSub.name}: ${formatTokens(totalTokens)} / 250k (${pct}%) — ${zone.tag}`
+      : `Context Window: ${formatTokens(totalTokens)} / 250k (${pct}%) — ${zone.tag}`;
 
     // Atualiza anel SVG do breadcrumb widget
     const bRing = document.getElementById('agy-breadcrumb-ring');
     if (bRing) {
-      const activeSub = getActiveBreadcrumbSubagent();
-      if (activeSub) {
-        const subOffset = Math.max(0, CIRCLE_C - (activeSub.pct / 100) * CIRCLE_C);
+      if (activeSub && activeSub.details) {
+        const subVisualPct = Math.min(100, Math.max(0, activeSub.pct));
+        const subOffset = Math.max(0, CIRCLE_C - (subVisualPct / 100) * CIRCLE_C);
         bRing.style.stroke = activeSub.zone.color;
         bRing.style.strokeDashoffset = subOffset;
         breadcrumbWidget.title = `Subagente ${activeSub.name}: ${formatTokens(activeSub.totalTokens)} / 250k (${activeSub.pct}%) — ${activeSub.zone.tag}`;
