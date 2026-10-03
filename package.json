@@ -1,13 +1,14 @@
 {
   "name": "@vitalfin/antigravity-context-monitor",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "Autonomous real-time context window monitor, subagent inspector, cost estimator & memory guard for Google Antigravity.",
   "main": "widget.js",
   "type": "module",
   "scripts": {
     "start": "node monitor.mjs",
+    "build": "node generate-widget.mjs",
     "test": "node test-cost.mjs && node test-i18n.mjs",
-    "test:cdp": "node test-v150.mjs && node test-v140.mjs && node test-v130.mjs && node test-live-cdp.mjs",
+    "test:cdp": "node test-integration.mjs",
     "test:all": "npm run test && npm run test:cdp"
   },
   "keywords": [
