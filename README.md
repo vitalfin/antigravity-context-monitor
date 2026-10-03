@@ -4,7 +4,7 @@
 
 **Real-time context gauge, subagent inspector & cost estimator for Google Antigravity.**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License: BSL 1.1](https://img.shields.io/badge/License-BSL%201.1-blue.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/version-1.5.0-emerald.svg)](package.json)
 [![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](package.json)
 [![i18n](https://img.shields.io/badge/i18n-EN%20%7C%20PT%20%7C%20ES%20%7C%20JA%20%7C%20ZH%20%7C%20FR%20%7C%20DE-blueviolet.svg)](#-key-features)
@@ -130,6 +130,10 @@ Maintained with care by **Vitalf Technologies** to empower autonomous AI enginee
 
 ## 📄 License
 
-Distributed under the **MIT License**.
+Distributed under the **Business Source License 1.1 (BSL 1.1)**.
 
-You are free to use, modify, distribute, and sublicense this software, provided that the original copyright notice and permission notice attributing **Vitalf Technologies** are retained in all copies or substantial portions of the Software. See [LICENSE](LICENSE) for full details.
+- **Free for Developers & Community**: You are free to view, copy, modify, test, and use this software for any personal, educational, research, or internal developer workflows.
+- **Commercial & Native Platform Protection**: Incorporation, embedding, or distribution of this software into commercial development platforms, commercial IDEs, or managed cloud services requires a separate commercial license granted in writing by **Vitalf Technologies**.
+- **Open Source Transition**: On **October 3, 2028**, this version automatically converts to the **MIT License**.
+
+See [LICENSE](LICENSE) for complete terms, or contact `contact@vitalf.ai` for commercial licensing inquiries.

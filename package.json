@@ -26,7 +26,7 @@
     "i18n"
   ],
   "author": "Vitalf Technologies <contact@vitalf.ai>",
-  "license": "MIT",
+  "license": "BUSL-1.1",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/vitalfin/antigravity-context-monitor.git"
