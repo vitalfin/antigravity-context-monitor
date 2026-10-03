@@ -9,19 +9,19 @@
     return;
   }
 
-  // Limpeza completa de instâncias antigas
+  // Complete cleanup of older instances
   document.querySelectorAll('#' + WIDGET_ID + ', #' + BREADCRUMB_WIDGET_ID + ', #' + MODAL_ID + ', #' + POPOVER_ID).forEach(el => el.remove());
   document.querySelectorAll('.agy-subagent-badge').forEach(el => el.remove());
   if (window.__agyWidgetInterval) clearInterval(window.__agyWidgetInterval);
 
   window.__agyWidgetVersion = VERSION;
 
-  const SMART_LIMIT = 250000; // Limite operacional de qualidade (~250k)
-  const RAW_LIMIT = 1000000;   // Limite bruto do modelo (~1M)
+  const SMART_LIMIT = 250000; // Operational quality threshold (~250k)
+  const RAW_LIMIT = 1000000;   // Raw model context capacity (~1M)
   const CIRCLE_C = 81.6814;    // 2 * Math.PI * 13
 
   // ==========================================
-  // SISTEMA DE INTERNACIONALIZAÇÃO (i18n)
+  // INTERNATIONALIZATION SYSTEM (i18n)
   // ==========================================
   const SUPPORTED_LOCALES = {
     en: { name: 'English', flag: '🇺🇸', short: 'EN' },
@@ -923,7 +923,7 @@
       const saved = localStorage.getItem('agy_locale');
       if (saved && SUPPORTED_LOCALES[saved]) return saved;
     } catch (e) {}
-    return 'en'; // Padrão: Inglês
+    return 'en'; // Default: English
   }
 
   let currentLocale = getSavedLocale();
@@ -1059,14 +1059,14 @@
     return 'Gemini 3.8 Flash';
   }
 
-  // TABELA DE PRECIFICAÇÃO DA API (Google AI Studio / Vertex AI / Claude)
+  // API PRICING TABLE (Google AI Studio / Vertex AI / Claude)
   const PRICING_TIERS = {
     'gemini-flash': {
       id: 'gemini-flash',
       displayName: 'Gemini 3.8 Flash',
       provider: 'Google AI Studio',
       inputPricePerM: 0.10,
-      cachePricePerM: 0.025, // 75% desconto no cache
+      cachePricePerM: 0.025, // 75% cache discount
       outputPricePerM: 0.40,
       cacheDiscountPct: 75
     },
@@ -1076,7 +1076,7 @@
       provider: 'Google AI Studio',
       inputPricePerM: 1.25,      // <= 128k
       inputPricePerMHigh: 2.50,  // > 128k
-      cachePricePerM: 0.3125,    // 75% desconto
+      cachePricePerM: 0.3125,    // 75% discount
       outputPricePerM: 5.00,
       cacheDiscountPct: 75
     },
@@ -1085,7 +1085,7 @@
       displayName: 'Claude Sonnet 4.6',
       provider: 'Anthropic',
       inputPricePerM: 3.00,
-      cachePricePerM: 0.30,      // 90% desconto
+      cachePricePerM: 0.30,      // 90% discount
       outputPricePerM: 15.00,
       cacheDiscountPct: 90
     }
@@ -1112,7 +1112,7 @@
       };
     }
 
-    // Padrão: Gemini Flash
+    // Default: Gemini Flash
     return {
       ...PRICING_TIERS['gemini-flash'],
       displayName: detectedName || 'Gemini 3.8 Flash'
@@ -1129,7 +1129,7 @@
     const costOutput = (outputTokens / 1000000) * pOutput;
     const totalCost = costInput + costCache + costOutput;
 
-    // Economia real com o cache de contexto
+    // Context cache savings
     const savedCost = (cachedTokens / 1000000) * (pInput - pCache);
     const costWithoutCache = totalCost + savedCost;
 
@@ -1207,7 +1207,7 @@
     };
   }
 
-  // Estado global do contexto
+  // Global context state
   let currentContextData = null;
   let activeTab = 'overview';
   let latestSubagentsList = [];
@@ -1218,7 +1218,7 @@
   let currentPopoverIsSubagent = false;
   let hideTimer = null;
 
-  // Cache de contexto por cascadeId
+  // Context cache by cascadeId
   const contextCache = new Map();
   window.__agyContextCache = contextCache;
   window.__agySetLocale = setLocale;
@@ -1261,7 +1261,7 @@
       for (let i = 0; i < steps.length; i++) {
         const s = steps[i];
 
-        // Detecção de Compactação automática do Antigravity
+        // Antigravity automatic compaction detection
         if (s.type === 'CORTEX_STEP_TYPE_CHECKPOINT' || s.checkpoint) {
           compactionCount++;
           checkpoints.push({
@@ -1379,7 +1379,7 @@
     }
   }
 
-  // 1. CRIAR WIDGET PRINCIPAL (RODAPÉ / INPUT BAR)
+  // 1. CREATE MAIN WIDGET (FOOTER / INPUT BAR)
   const widget = document.createElement('div');
   widget.id = WIDGET_ID;
   widget.style.cssText = 'display: inline-flex; align-items: center; justify-content: center; height: 28px; width: 28px; border-radius: 8px; cursor: pointer; user-select: none; position: relative; margin-left: 6px; vertical-align: middle; transition: background-color 0.15s ease; flex-shrink: 0;';
@@ -1392,7 +1392,7 @@
     </div>
   `;
 
-  // 2. CRIAR BREADCRUMB WIDGET (TOPO / CABEÇALHO)
+  // 2. CREATE BREADCRUMB WIDGET (TOP / HEADER)
   const breadcrumbWidget = document.createElement('div');
   breadcrumbWidget.id = BREADCRUMB_WIDGET_ID;
   breadcrumbWidget.style.cssText = 'display: inline-flex; align-items: center; justify-content: center; height: 22px; width: 22px; border-radius: 6px; cursor: pointer; user-select: none; position: relative; margin-left: 6px; vertical-align: middle; transition: background-color 0.15s ease; flex-shrink: 0;';
@@ -1405,7 +1405,7 @@
     </div>
   `;
 
-  // 3. SINGLETON POPOVER PORTADO DIRETAMENTE PARA O BODY
+  // 3. SINGLETON POPOVER PORTALED DIRECTLY TO BODY
   const popover = document.createElement('div');
   popover.id = POPOVER_ID;
   popover.style.cssText = 'display: none; position: fixed; width: 310px; background: var(--card, #1c1c1f); color: var(--foreground, #f2f2f2); border: 1px solid var(--border, rgba(255, 255, 255, 0.12)); border-radius: 10px; box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6), 0 3px 10px rgba(0, 0, 0, 0.4); padding: 12px; z-index: 99999999; font-family: var(--font-sans, system-ui, -apple-system, sans-serif); pointer-events: auto; box-sizing: border-box; font-size: 11.5px; line-height: 1.4;';
@@ -1441,7 +1441,7 @@
       High quality (accurate, sharp responses)
     </div>
 
-    <!-- COMPOSIÇÃO RESUMIDA DO CONTEXTO -->
+    <!-- SUMMARY CONTEXT COMPOSITION -->
     <div id="agy-composition-section" style="padding-top: 6px; border-top: 1px solid var(--border, rgba(255,255,255,0.1)); margin-bottom: 6px;">
       <div style="font-size: 10px; font-weight: 600; color: var(--muted-foreground, #999); text-transform: uppercase; margin-bottom: 5px; display: flex; justify-content: space-between;">
         <span id="agy-lbl-context-dist">Context Distribution</span>
@@ -1459,11 +1459,11 @@
         <span id="agy-tag-cmds" style="padding: 2px 5px; border-radius: 3px; background: rgba(249, 115, 22, 0.15); color: #fb923c;">💻 Outputs: 0</span>
       </div>
 
-      <!-- Top consumidores preview -->
+      <!-- Top consumers preview -->
       <div id="agy-top-consumers" style="font-size: 10px; color: var(--muted-foreground, #aaa); display: flex; flex-direction: column; gap: 2px;"></div>
     </div>
 
-    <!-- SEÇÃO DINÂMICA DE SUBAGENTES (para a conversa principal) -->
+    <!-- DYNAMIC SUBAGENTS SECTION (for main conversation) -->
     <div id="agy-subagents-section" style="display: none; padding-top: 6px; border-top: 1px solid var(--border, rgba(255,255,255,0.1)); margin-bottom: 6px;">
       <div style="font-size: 10px; font-weight: 600; color: var(--muted-foreground, #999); text-transform: uppercase; margin-bottom: 2px; display: flex; justify-content: space-between;">
         <span id="agy-lbl-subagents-sec">Subagents (Isolated)</span>
@@ -1473,7 +1473,7 @@
       <div id="agy-subagents-list" style="display: flex; flex-direction: column; gap: 3px; font-size: 10.5px;"></div>
     </div>
 
-    <!-- RODAPÉ DO POPOVER (INSPECIONAR + IDIOMA + SPONSOR) -->
+    <!-- POPOVER FOOTER (INSPECT + LANGUAGE + SPONSOR) -->
     <div style="padding-top: 6px; border-top: 1px solid var(--border, rgba(255,255,255,0.1)); display: flex; gap: 6px; align-items: center;">
       <button id="agy-btn-inspect" type="button" style="flex: 1; border: 1px solid var(--border, rgba(255,255,255,0.15)); background: var(--secondary, rgba(255,255,255,0.06)); color: var(--foreground, #f2f2f2); border-radius: 6px; padding: 5px 8px; font-size: 10.5px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; transition: background 0.15s ease;">
         <span id="agy-btn-inspect-text">🔍 Inspect Full Context</span>
@@ -1494,13 +1494,13 @@
       </a>
     </div>
 
-    <!-- Seta do Popover com Posicionamento Dinâmico -->
+    <!-- Popover Arrow with Dynamic Positioning -->
     <div id="agy-popover-arrow" style="position: absolute; width: 8px; height: 8px; background: var(--card, #1c1c1f); pointer-events: none;"></div>
   `;
 
   document.body.appendChild(popover);
 
-  // 4. POSICIONAMENTO DINÂMICO E CLAMPEAMENTO DO POPOVER (ANTI-CLIPPING)
+  // 4. DYNAMIC POPOVER POSITIONING AND VIEWPORT CLAMPING (ANTI-CLIPPING)
   function positionPopover(targetEl) {
     const rect = targetEl.getBoundingClientRect();
     const popWidth = 310;
@@ -1672,7 +1672,7 @@
       }
     }
 
-    // Seção de subagentes no popover (exibida apenas na sessão principal quando houver subagentes)
+    // Subagents section in popover (only shown in main session when subagents exist)
     const sectionEl = document.getElementById('agy-subagents-section');
     const countEl = document.getElementById('agy-subagents-count');
     const listEl = document.getElementById('agy-subagents-list');
@@ -1720,7 +1720,7 @@
     setLocale(e.target.value);
   });
 
-  // 5. MODAL DE INSPEÇÃO DETALHADA DO CONTEXTO COM MULTI-ESCOPO E INTERNACIONALIZAÇÃO
+  // 5. DETAILED CONTEXT INSPECTION MODAL WITH MULTI-SCOPE AND i18n
   const modal = document.createElement('div');
   modal.id = MODAL_ID;
   modal.style.cssText = 'display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(5px); z-index: 999999999; align-items: center; justify-content: center; font-family: var(--font-sans, system-ui, -apple-system, sans-serif); color: var(--foreground, #f2f2f2); box-sizing: border-box;';
@@ -1743,14 +1743,14 @@
           </span>
         </div>
 
-        <!-- Seletor de Sessão, Idioma & Sponsor -->
+        <!-- Session Selector, Language & Sponsor -->
         <div style="display: flex; align-items: center; gap: 6px;">
           <span id="agy-lbl-scope" style="font-size: 10.5px; color: var(--muted-foreground, #888); font-weight: 500;">Scope:</span>
           <select id="agy-session-select" style="background: var(--secondary, #27272a); color: var(--foreground, #f4f4f5); border: 1px solid var(--border, rgba(255,255,255,0.18)); border-radius: 6px; padding: 4px 8px; font-size: 11px; font-weight: 500; cursor: pointer; outline: none; max-width: 200px;">
             <option value="main">🌐 Main Conversation</option>
           </select>
 
-          <!-- Seletor de Idioma -->
+          <!-- Language Selector -->
           <select id="agy-lang-select" style="background: var(--secondary, #27272a); color: var(--foreground, #f4f4f5); border: 1px solid var(--border, rgba(255,255,255,0.18)); border-radius: 6px; padding: 4px 6px; font-size: 11px; font-weight: 600; cursor: pointer; outline: none;" title="Language / Idioma">
             <option value="en">🇺🇸 EN</option>
             <option value="pt">🇧🇷 PT</option>
@@ -1761,7 +1761,7 @@
             <option value="de">🇩🇪 DE</option>
           </select>
 
-          <!-- Botão Sponsor Vitalf -->
+          <!-- Vitalf Sponsor Button -->
           <a id="agy-modal-sponsor" href="https://github.com/sponsors/vitalfin" target="_blank" rel="noopener noreferrer" style="text-decoration: none; background: rgba(244, 63, 94, 0.15); border: 1px solid rgba(244, 63, 94, 0.3); color: #fb7185; border-radius: 6px; padding: 4px 8px; font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; transition: all 0.15s ease;" title="Support Vitalf on GitHub Sponsors">
             <span>💖</span><span id="agy-sponsor-text">Sponsor</span>
           </a>
@@ -1831,13 +1831,13 @@
 
       <!-- Tab Content Area -->
       <div id="agy-tab-content" style="padding: 14px 18px; overflow-y: auto; flex: 1; font-size: 11.5px;">
-        <!-- Injetado dinamicamente via renderModalTab() -->
+        <!-- Dynamically injected via renderModalTab() -->
       </div>
       
     </div>
   `;
 
-  // Estilos globais dinâmicos
+  // Dynamic global styles
   const styleEl = document.createElement('style');
   styleEl.textContent = `
     @keyframes agyFadeIn {
@@ -1905,7 +1905,7 @@
     }
   }
 
-  // Inicializa seletores e rótulos estáticos no DOM imediatamente
+  // Initialize selectors and static labels in DOM immediately
   updateStaticLabels();
 
   function closeModal() {
@@ -1920,7 +1920,7 @@
     if (e.key === 'Escape' && modal.style.display === 'flex') closeModal();
   });
 
-  // Troca de abas do modal
+  // Modal tab navigation
   modal.querySelectorAll('.agy-tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       activeTab = btn.dataset.tab;
@@ -1934,7 +1934,7 @@
     });
   });
 
-  // Seletor de Idiomas no Modal
+  // Modal language selector
   const modalLangSelect = modal.querySelector('#agy-lang-select');
   if (modalLangSelect) {
     modalLangSelect.value = currentLocale;
@@ -1943,7 +1943,7 @@
     });
   }
 
-  // Mudança no select de escopo do modal
+  // Modal scope select handler
   const sessionSelect = modal.querySelector('#agy-session-select');
   if (sessionSelect) {
     sessionSelect.addEventListener('change', () => {
@@ -1973,7 +1973,7 @@
     const isSubagent = isScopeSubagent(data, scopeName);
     activeModalScope = scopeName || (isSubagent ? t('scopeSubagent') : t('scopeMainConversation'));
 
-    // Alterna a exibição da aba de subagentes (NUNCA mostrar aba subagentes dentro de um subagente!)
+    // Toggle subagents tab visibility (NEVER show subagents tab inside a subagent)
     const tabSubBtn = document.getElementById('agy-tab-btn-subagents');
     if (tabSubBtn) {
       if (isSubagent) {
@@ -2097,7 +2097,7 @@
 
     if (mRawRatio) mRawRatio.innerText = t('rawRatioText', { tokens: formatTokens(totalTokens), pct: rawPct });
 
-    // Normalização das barras segmentadas de carga
+    // Load category segment bar normalization
     const rawSum = (data.breakdown.system || 0) + (data.breakdown.files || 0) + (data.breakdown.commands || 0) + (data.breakdown.dialogue || 0);
     const normBase = Math.max(totalTokens, rawSum, 1);
     const bSysPct = Math.round(((data.breakdown.system || 0) / normBase) * 100);
@@ -2149,7 +2149,7 @@
     modal.style.display = 'flex';
   }
 
-  // Renderizador de abas do modal
+  // Modal tab renderers
   function renderModalTab(tab, activeData) {
     const container = modal.querySelector('#agy-tab-content');
     if (!container) return;
@@ -2229,7 +2229,7 @@
             </div>
           </div>
 
-          <!-- Top 5 Arquivos -->
+          <!-- Top 5 Files -->
           <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border, rgba(255,255,255,0.08)); border-radius: 8px; padding: 12px;">
             <div style="font-weight: 600; margin-bottom: 6px; font-size: 12px; display: flex; justify-content: space-between;">
               <span>${t('topConsumersTitle')}</span>
@@ -2275,7 +2275,7 @@
       container.innerHTML = `
         <div style="display: flex; flex-direction: column; gap: 12px;">
           
-          <!-- Callout sobre o Modelo e Plano -->
+          <!-- Model and Plan Callout -->
           <div style="padding: 10px 12px; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; display: flex; align-items: flex-start; gap: 10px;">
             <span style="font-size: 16px;">ℹ️</span>
             <div>
@@ -2286,7 +2286,7 @@
             </div>
           </div>
 
-          <!-- Cartão de Economia com Cache de Contexto -->
+          <!-- Context Cache Savings Card -->
           <div style="background: rgba(34, 197, 94, 0.06); border: 1px solid rgba(34, 197, 94, 0.25); border-radius: 8px; padding: 12px;">
             <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px;">
               <span style="font-weight: 600; color: #22c55e; font-size: 12px;">${t('cachingEfficiencyTitle')}</span>
@@ -2311,7 +2311,7 @@
             </div>
           </div>
 
-          <!-- Tabela de Preços e Projeções de Zona -->
+          <!-- Pricing Table and Zone Projections -->
           <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border, rgba(255,255,255,0.08)); border-radius: 8px; padding: 12px;">
             <div style="font-weight: 600; margin-bottom: 8px; font-size: 12px;">${t('refPricingTitle', { model: pricing.displayName })}</div>
             <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; font-size: 10.5px; padding: 4px 6px; color: var(--muted-foreground, #888); border-bottom: 1px solid var(--border, rgba(255,255,255,0.08)); font-weight: 600;">
@@ -2342,7 +2342,7 @@
             </div>
           </div>
 
-          <!-- Projeção Smart Zone vs Dumb Zone -->
+          <!-- Smart Zone vs Dumb Zone Projection -->
           <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border, rgba(255,255,255,0.08)); border-radius: 8px; padding: 12px;">
             <div style="font-weight: 600; margin-bottom: 6px; font-size: 12px;">${t('projectionsTitle')}</div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px;">
@@ -2508,7 +2508,7 @@
     }
   }
 
-  // 6. EVENTOS DE HOVER E CLIQUE NOS WIDGETS
+  // 6. WIDGET HOVER AND CLICK EVENTS
   function getActiveBreadcrumbSubagent() {
     const breadcrumbs = Array.from(document.querySelectorAll('[data-testid="breadcrumb-segment"]'));
     if (breadcrumbs.length <= 2) return null; // [workspace, Task Title]
@@ -2574,7 +2574,7 @@
     }
   });
 
-  // 7. MONTAGEM DOS WIDGETS NO DOM
+  // 7. DOM WIDGET MOUNTING
   function ensureWidgetMounted() {
     const anchor = document.querySelector('button[data-testid="model-selector-trigger"]')
       || document.querySelector('button[aria-label="Add context"]')
@@ -2601,7 +2601,7 @@
     }
   }
 
-  // 8. RESET COMPLETO PARA NOVA CONVERSA
+  // 8. COMPLETE RESET FOR NEW CONVERSATION
   function resetToEmptyState() {
     currentContextData = null;
 
@@ -2630,7 +2630,7 @@
     }
   }
 
-  // 9. ATUALIZAR BADGES INTERATIVAS NOS CARDS DE SUBAGENTES
+  // 9. UPDATE INTERACTIVE BADGES ON SUBAGENT CARDS
   async function updateSubagentNodes() {
     const nodes = Array.from(document.querySelectorAll('[data-testid="subagent-node"]'));
     const subagentsList = [];
@@ -2690,14 +2690,14 @@
     return subagentsList;
   }
 
-  // 10. ATUALIZAÇÃO GERAL DO CONTEXTO
+  // 10. OVERALL CONTEXT UPDATE
   async function updateAll() {
     ensureWidgetMounted();
 
     const path = location.pathname;
     const match = path.match(/\/c\/([a-zA-Z0-9_-]+)/);
 
-    // Rota de nova conversa sem ID
+    // New conversation route without ID
     if (!match) {
       resetToEmptyState();
       return;
@@ -2705,10 +2705,10 @@
 
     const currentCascadeId = match[1];
 
-    // Atualiza badges nos cards de subagentes se existirem
+    // Update badges on subagent cards if present
     const subagents = await updateSubagentNodes();
 
-    // Busca detalhes da conversa ativa
+    // Fetch active conversation details
     const details = await fetchContextDetails(currentCascadeId);
 
     if (!details || details.totalTokens === 0) {
@@ -2729,7 +2729,7 @@
     const rawPct = Math.round((totalTokens / RAW_LIMIT) * 1000) / 10;
     const zone = getZone(pct);
 
-    // Atualiza anel SVG do widget principal
+    // Update SVG ring of main widget
     const ring = document.getElementById('agy-zone-ring');
     const offset = Math.max(0, CIRCLE_C - (visualPct / 100) * CIRCLE_C);
     if (ring) {
@@ -2740,7 +2740,7 @@
       ? `${t('scopeSubagent')} ${activeSub.name}: ${formatTokens(totalTokens)} / 250k (${pct}%) — ${zone.tag}`
       : `${t('scopeContextWindow')}: ${formatTokens(totalTokens)} / 250k (${pct}%) — ${zone.tag}`;
 
-    // Atualiza anel SVG do breadcrumb widget
+    // Update SVG ring of breadcrumb widget
     const bRing = document.getElementById('agy-breadcrumb-ring');
     if (bRing) {
       if (activeSub && activeSub.details) {
@@ -2756,7 +2756,7 @@
       }
     }
 
-    // Se o modal estiver aberto, atualiza a sessão atualmente selecionada
+    // If modal is open, refresh currently selected session
     if (modal.style.display === 'flex') {
       const select = modal.querySelector('#agy-session-select');
       const selectedVal = select ? select.value : 'main';
