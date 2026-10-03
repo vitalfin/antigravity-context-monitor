@@ -2576,10 +2576,13 @@
 
   // 7. MONTAGEM DOS WIDGETS NO DOM
   function ensureWidgetMounted() {
-    const modelTrigger = document.querySelector('button[data-testid="model-selector-trigger"]');
-    if (modelTrigger && modelTrigger.parentElement) {
-      if (widget.parentElement !== modelTrigger.parentElement || widget.previousElementSibling !== modelTrigger) {
-        modelTrigger.after(widget);
+    const anchor = document.querySelector('button[data-testid="model-selector-trigger"]')
+      || document.querySelector('button[aria-label="Add context"]')
+      || document.querySelector('[data-testid="agent-input-box"] button');
+
+    if (anchor && anchor.parentElement) {
+      if (widget.parentElement !== anchor.parentElement || widget.previousElementSibling !== anchor) {
+        anchor.after(widget);
       }
     } else if (widget.parentElement) {
       widget.remove();
