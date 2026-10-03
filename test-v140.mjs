@@ -4,11 +4,11 @@ import os from 'os';
 import assert from 'assert';
 import { getDevToolsPortFile } from './monitor.mjs';
 
-console.log('🧪 Iniciando Verificação CDP v1.4.0 (Subagent Isolation + Compaction Detection)...');
+console.log('🧪 Starting CDP Verification v1.4.0 (Subagent Isolation + Compaction Detection)...');
 
 const portFile = getDevToolsPortFile();
 if (!portFile || !fs.existsSync(portFile)) {
-  console.error('DevToolsActivePort não encontrado.');
+  console.error('DevToolsActivePort not found.');
   process.exit(1);
 }
 
@@ -20,11 +20,11 @@ const targets = await res.json();
 const pageTarget = targets.find(t => t.type === 'page' && !t.url.includes('devtools'));
 
 if (!pageTarget) {
-  console.error('Nenhum alvo de página do Antigravity encontrado.');
+  console.error('No Antigravity page target found.');
   process.exit(1);
 }
 
-console.log('Conectado ao alvo CDP:', pageTarget.title, pageTarget.url);
+console.log('Connected to CDP target:', pageTarget.title, pageTarget.url);
 
 const ws = new WebSocket(pageTarget.webSocketDebuggerUrl);
 
@@ -48,12 +48,12 @@ function sendCmd(method, params = {}) {
 
 ws.onopen = async () => {
   try {
-    // 1. Injeta a versão v1.4.0 de widget.js na página
+    // 1. Inject v1.4.0 of widget.js into page
     const widgetSrc = fs.readFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), 'widget.js'), 'utf8');
     await sendCmd('Runtime.evaluate', { expression: 'window.__agyWidgetVersion = null;' });
     await sendCmd('Runtime.evaluate', { expression: widgetSrc });
 
-    // 2. Verifica a versão e elementos essenciais no DOM
+    // 2. Check version and essential DOM elements
     const evalResult = await sendCmd('Runtime.evaluate', {
       expression: `(() => {
         const version = window.__agyWidgetVersion;
@@ -80,24 +80,24 @@ ws.onopen = async () => {
     });
 
     const state = evalResult.result.value;
-    console.log('🔍 Elementos v1.4.0 no DOM:', JSON.stringify(state, null, 2));
-    assert(state.version === '1.4.0-subagent-isolation-compaction' || state.version === '1.5.0-i18n-opensource', 'Versão deve ser 1.4.0 ou 1.5.0-i18n-opensource');
-    assert.strictEqual(state.hasWidget, true, 'Widget deve existir');
-    assert.strictEqual(state.hasPopover, true, 'Popover deve existir');
-    assert.strictEqual(state.hasModal, true, 'Modal deve existir');
-    assert.strictEqual(state.hasCompactionBadge, true, 'Badge de compactação deve existir no popover');
-    assert.strictEqual(state.hasModalCompTag, true, 'Tag de compactação deve existir no modal');
-    assert.strictEqual(state.hasModalSubagentTag, true, 'Tag de subagente deve existir no modal');
-    assert.strictEqual(state.hasTabSubBtn, true, 'Botão da aba de subagentes deve existir');
-    console.log('  ✓ Teste 1 passou: Montagem e tags v1.4.0 validadas.');
+    console.log('🔍 Elements v1.4.0 in DOM:', JSON.stringify(state, null, 2));
+    assert(state.version === '1.4.0-subagent-isolation-compaction' || state.version === '1.5.0-i18n-opensource', 'Version must be 1.4.0 or 1.5.0-i18n-opensource');
+    assert.strictEqual(state.hasWidget, true, 'Widget must exist');
+    assert.strictEqual(state.hasPopover, true, 'Popover must exist');
+    assert.strictEqual(state.hasModal, true, 'Modal must exist');
+    assert.strictEqual(state.hasCompactionBadge, true, 'Compaction badge must exist in popover');
+    assert.strictEqual(state.hasModalCompTag, true, 'Compaction tag must exist in modal');
+    assert.strictEqual(state.hasModalSubagentTag, true, 'Subagent tag must exist in modal');
+    assert.strictEqual(state.hasTabSubBtn, true, 'Subagent tab button must exist');
+    console.log('  ✓ Test 1 passed: Assembly and v1.4.0 tags validated.');
 
-    // 3. Teste de Isolamento de Subagente (Aba Subagentes deve SUMIR ao inspecionar subagente)
+    // 3. Subagent Isolation Test (Subagent tab MUST disappear when inspecting a subagent)
     const isolationTest = await sendCmd('Runtime.evaluate', {
       expression: `(async () => {
         const modal = document.getElementById('agy-context-inspector-modal');
         const tabSubBtn = document.getElementById('agy-tab-btn-subagents');
         
-        // Simula dados de um subagente
+        // Mock subagent data
         const mockSubData = {
           cascadeId: 'mock-subagent-cascade-999',
           totalTokens: 28500,
@@ -113,11 +113,11 @@ ws.onopen = async () => {
           commands: []
         };
 
-        // Simula abertura de subagente no modal
+        // Open subagent in modal
         const widget = document.getElementById('agy-context-zone-widget');
-        widget.click(); // Abre modal
+        widget.click();
         
-        // Popula cache e dispara render com escopo de subagente
+        // Populate cache and trigger render with subagent scope
         if (window.__agyContextCache) {
           window.__agyContextCache.set(mockSubData.cascadeId, mockSubData);
         }
@@ -130,10 +130,10 @@ ws.onopen = async () => {
         select.dispatchEvent(new Event('change'));
         await new Promise(r => setTimeout(r, 50));
 
-        // Testa visibilidade do botão de subagente
+        // Test visibility of subagent button
         const tabSubDisplayInSub = window.getComputedStyle(tabSubBtn).display;
 
-        // Agora simula volta para Conversa Principal
+        // Simulate return to Main Conversation
         select.value = 'main';
         select.dispatchEvent(new Event('change'));
         await new Promise(r => setTimeout(r, 60));
@@ -151,12 +151,12 @@ ws.onopen = async () => {
     });
 
     const iso = isolationTest.result.value;
-    console.log('🛡️ Teste de Isolamento de Aba:', JSON.stringify(iso, null, 2));
-    assert.strictEqual(iso.tabSubDisplayInSub, 'none', 'Aba Subagentes DEVE ficar oculta (display: none) ao inspecionar um subagente!');
-    assert.notStrictEqual(iso.tabSubDisplayInMain, 'none', 'Aba Subagentes DEVE voltar a ficar visível na Conversa Principal');
-    console.log('  ✓ Teste 2 passou: Aba Subagentes oculta dentro de subagente e visível na principal.');
+    console.log('🛡️ Tab Isolation Test:', JSON.stringify(iso, null, 2));
+    assert.strictEqual(iso.tabSubDisplayInSub, 'none', 'Subagents tab MUST be hidden (display: none) when inspecting a subagent!');
+    assert.notStrictEqual(iso.tabSubDisplayInMain, 'none', 'Subagents tab MUST be visible again in Main Conversation');
+    console.log('  ✓ Test 2 passed: Subagents tab hidden inside subagent and visible in main conversation.');
 
-    // 4. Teste de Detecção de Compactação no Modal e Popover
+    // 4. Compaction Detection Test in Modal and Popover
     const compactionTest = await sendCmd('Runtime.evaluate', {
       expression: `(() => {
         const modal = document.getElementById('agy-context-inspector-modal');
@@ -164,7 +164,7 @@ ws.onopen = async () => {
         const compBadge = document.getElementById('agy-compaction-badge');
         const modalCompTag = document.getElementById('agy-modal-compaction-tag');
 
-        // Simula render de dados compactados no popover e modal
+        // Simulate compacted data render in popover and modal
         const mockCompactedData = {
           cascadeId: 'mock-cascade-compacted',
           totalTokens: 22800,
@@ -180,18 +180,18 @@ ws.onopen = async () => {
           commands: []
         };
 
-        // Popula popover e modal
+        // Populate popover and modal
         const widget = document.getElementById('agy-context-zone-widget');
         if (window.__agyContextCache) {
           window.__agyContextCache.set('mock-cascade-compacted', mockCompactedData);
         }
         
-        // Simula clique e renderização de dados compactados
+        // Simulate click and rendering of compacted data
         widget.click();
         const select = document.getElementById('agy-session-select');
         const opt = document.createElement('option');
         opt.value = mockCompactedData.cascadeId;
-        opt.innerText = 'Compactada';
+        opt.innerText = 'Compacted';
         select.appendChild(opt);
         select.value = mockCompactedData.cascadeId;
         select.dispatchEvent(new Event('change'));
@@ -209,12 +209,12 @@ ws.onopen = async () => {
     });
 
     const compRes = compactionTest.result.value;
-    console.log('🔄 Teste de Compactação:', JSON.stringify(compRes, null, 2));
-    assert.strictEqual(compRes.modalCompTagDisplay, 'inline-block', 'Tag de compactação deve estar visível');
-    assert(compRes.modalCompTagText.includes('COMPACTADO (2x)') || compRes.modalCompTagText.includes('COMPACTED (2x)'), 'Tag deve indicar compactação 2x');
-    console.log('  ✓ Teste 3 passou: Detecção e exibição visual de compactação validadas.');
+    console.log('🔄 Compaction Test:', JSON.stringify(compRes, null, 2));
+    assert.strictEqual(compRes.modalCompTagDisplay, 'inline-block', 'Compaction tag must be visible');
+    assert(compRes.modalCompTagText.includes('COMPACTADO (2x)') || compRes.modalCompTagText.includes('COMPACTED (2x)'), 'Tag must indicate 2x compaction');
+    console.log('  ✓ Test 3 passed: Visual compaction detection and display validated.');
 
-    // 5. Teste de Contexto acima de 250k (sem resetar para zero e mantendo porcentagem real)
+    // 5. Overflow Test: Context above 250k (without resetting to zero and maintaining actual percentage)
     const overflowTest = await sendCmd('Runtime.evaluate', {
       expression: `(() => {
         const SMART_LIMIT = 250000;
@@ -235,17 +235,17 @@ ws.onopen = async () => {
     });
 
     const ofRes = overflowTest.result.value;
-    console.log('📊 Teste de Exibição > 250k:', JSON.stringify(ofRes, null, 2));
-    assert.strictEqual(ofRes.isOver100, true, 'Porcentagem textual deve passar de 100% (> 250k)');
-    assert.strictEqual(ofRes.visualClampedAt100, true, 'Porcentagem visual gráfica deve ser clampeada em 100%');
-    assert.strictEqual(ofRes.textFormat, '268.9k', 'Formatação textual correta');
-    console.log('  ✓ Teste 4 passou: Contexto acima de 250k mostra porcentagem real sem resetar.');
+    console.log('📊 Context > 250k Display Test:', JSON.stringify(ofRes, null, 2));
+    assert.strictEqual(ofRes.isOver100, true, 'Text percentage must exceed 100% (> 250k)');
+    assert.strictEqual(ofRes.visualClampedAt100, true, 'Visual gauge percentage must be clamped at 100%');
+    assert.strictEqual(ofRes.textFormat, '268.9k', 'Correct textual formatting');
+    console.log('  ✓ Test 4 passed: Context above 250k displays actual percentage without resetting.');
 
-    console.log('\n🎉 TODOS OS TESTES v1.4.0 PASSARAM COM 100% DE SUCESSO!');
+    console.log('\n🎉 ALL v1.4.0 TESTS PASSED WITH 100% SUCCESS!');
     ws.close();
     process.exit(0);
   } catch (err) {
-    console.error('❌ Erro durante o teste CDP v1.4.0:', err);
+    console.error('❌ Error during CDP v1.4.0 test:', err);
     ws.close();
     process.exit(1);
   }

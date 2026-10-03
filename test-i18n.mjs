@@ -2,55 +2,55 @@ import assert from 'assert';
 import fs from 'fs';
 import path from 'path';
 
-console.log('🧪 Iniciando Testes Unitários de Internacionalização (i18n) e Sponsor (v1.5.0)...');
+console.log('🧪 Starting Internationalization (i18n) and Sponsor Unit Tests (v1.5.0)...');
 
 const widgetPath = path.join(path.dirname(new URL(import.meta.url).pathname), 'widget.js');
 const widgetSrc = fs.readFileSync(widgetPath, 'utf8');
 
-// 1. Integridade de Sintaxe e Versão
-assert(widgetSrc.includes("const VERSION = '1.5.0-i18n-opensource';"), 'widget.js deve ter VERSION = 1.5.0-i18n-opensource');
-assert(widgetSrc.includes('SUPPORTED_LOCALES'), 'widget.js deve definir SUPPORTED_LOCALES');
-assert(widgetSrc.includes('TRANSLATIONS'), 'widget.js deve conter TRANSLATIONS');
-assert(widgetSrc.includes('agy-lang-select'), 'widget.js deve conter o seletor de idiomas agy-lang-select');
-assert(widgetSrc.includes('agy-modal-sponsor'), 'widget.js deve conter o botão de sponsor agy-modal-sponsor');
-assert(widgetSrc.includes('https://github.com/sponsors/vitalfin'), 'widget.js deve apontar para o link de sponsor do GitHub');
+// 1. Syntax and Version Integrity
+assert(widgetSrc.includes("const VERSION = '1.5.0-i18n-opensource';"), 'widget.js must have VERSION = 1.5.0-i18n-opensource');
+assert(widgetSrc.includes('SUPPORTED_LOCALES'), 'widget.js must define SUPPORTED_LOCALES');
+assert(widgetSrc.includes('TRANSLATIONS'), 'widget.js must contain TRANSLATIONS');
+assert(widgetSrc.includes('agy-lang-select'), 'widget.js must contain the language selector agy-lang-select');
+assert(widgetSrc.includes('agy-modal-sponsor'), 'widget.js must contain the sponsor button agy-modal-sponsor');
+assert(widgetSrc.includes('https://github.com/sponsors/vitalfin'), 'widget.js must point to the GitHub sponsor link');
 
-console.log('  ✓ Teste 1 passou: Sintaxe e elementos estruturais v1.5.0 presentes.');
+console.log('  ✓ Test 1 passed: Syntax and structural elements for v1.5.0 present.');
 
-// 2. Extração das traduções do widget.js para teste exaustivo de simetria
+// 2. Extract translations from widget.js for exhaustive symmetry testing
 const matchTranslations = widgetSrc.match(/const TRANSLATIONS = ({[\s\S]*?\n  };)/);
-assert(matchTranslations, 'Não foi possível extrair o objeto TRANSLATIONS de widget.js');
+assert(matchTranslations, 'Unable to extract TRANSLATIONS object from widget.js');
 
-// Avalia de forma segura em escopo isolado
+// Safely evaluate in isolated scope
 const evalDict = new Function(`return ${matchTranslations[1]};`);
 const TRANSLATIONS = evalDict();
 
 const expectedLocales = ['en', 'pt', 'es', 'ja', 'zh', 'fr', 'de'];
 for (const loc of expectedLocales) {
-  assert(TRANSLATIONS[loc], `Idioma obrigatório '${loc}' não encontrado em TRANSLATIONS`);
+  assert(TRANSLATIONS[loc], `Required locale '${loc}' not found in TRANSLATIONS`);
 }
-console.log('  ✓ Teste 2 passou: Todos os 7 idiomas suportados estão presentes (en, pt, es, ja, zh, fr, de).');
+console.log('  ✓ Test 2 passed: All 7 supported locales present (en, pt, es, ja, zh, fr, de).');
 
-// 3. Simetria de Chaves e Integridade de Texto
+// 3. Key Symmetry and Text Integrity
 const enKeys = Object.keys(TRANSLATIONS.en);
-assert(enKeys.length >= 60, `Dicionário base 'en' deve conter ao menos 60 chaves, possui ${enKeys.length}`);
+assert(enKeys.length >= 60, `Base 'en' dictionary must contain at least 60 keys, found ${enKeys.length}`);
 
 for (const loc of expectedLocales) {
   const locKeys = Object.keys(TRANSLATIONS[loc]);
   const missingInLoc = enKeys.filter(k => !locKeys.includes(k));
-  assert.strictEqual(missingInLoc.length, 0, `Idioma '${loc}' está faltando as chaves: ${missingInLoc.join(', ')}`);
+  assert.strictEqual(missingInLoc.length, 0, `Locale '${loc}' is missing keys: ${missingInLoc.join(', ')}`);
 
   const extraInLoc = locKeys.filter(k => !enKeys.includes(k));
-  assert.strictEqual(extraInLoc.length, 0, `Idioma '${loc}' tem chaves extras não documentadas: ${extraInLoc.join(', ')}`);
+  assert.strictEqual(extraInLoc.length, 0, `Locale '${loc}' has undocumented extra keys: ${extraInLoc.join(', ')}`);
 
   for (const k of enKeys) {
     const val = TRANSLATIONS[loc][k];
-    assert(val !== undefined && val !== null && val !== '', `Chave '${k}' no idioma '${loc}' está vazia ou nula`);
+    assert(val !== undefined && val !== null && val !== '', `Key '${k}' in locale '${loc}' is empty or null`);
   }
 }
-console.log(`  ✓ Teste 3 passou: Simetria perfeita garantida! Todas as ${enKeys.length} chaves traduzidas nos 7 idiomas sem exceção.`);
+console.log(`  ✓ Test 3 passed: Perfect symmetry guaranteed across all ${enKeys.length} keys in 7 languages without exception.`);
 
-// 4. Teste de Interpolação de Parâmetros
+// 4. Parameter Interpolation Test
 function formatMessage(locale, key, params = {}) {
   const dict = TRANSLATIONS[locale] || TRANSLATIONS.en;
   let str = dict[key] || TRANSLATIONS.en[key] || key;
@@ -81,16 +81,16 @@ assert.strictEqual(frCompTag, 'COMPACTÉ (3x)');
 const deCompTag = formatMessage('de', 'modalCompactedTag', { count: 3 });
 assert.strictEqual(deCompTag, 'KOMPRIMIERT (3x)');
 
-console.log('  ✓ Teste 4 passou: Interpolação dinâmica ({count}, {tokens}) validada em todos os 7 idiomas.');
+console.log('  ✓ Test 4 passed: Dynamic interpolation ({count}, {tokens}) validated across all 7 languages.');
 
-// 5. Teste de Inglês como Padrão
+// 5. English as Default Locale Test
 const defaultLocaleMatch = widgetSrc.match(/let currentLocale = [^;]+;/);
-assert(defaultLocaleMatch, 'Não foi possível encontrar a inicialização de currentLocale');
-assert(widgetSrc.includes("return 'en'") || widgetSrc.includes("defaultLocale = 'en'"), 'Idioma padrão do Antigravity DEVE ser inglês (en)');
-console.log('  ✓ Teste 5 passou: Inglês configurado como idioma padrão do sistema.');
+assert(defaultLocaleMatch, 'Could not find currentLocale initialization');
+assert(widgetSrc.includes("return 'en'") || widgetSrc.includes("defaultLocale = 'en'"), 'Default locale must be English (en)');
+console.log('  ✓ Test 5 passed: English configured as default system locale.');
 
-// 6. Teste de Chaves Específicas e Validações de Qualidade
-assert.strictEqual(TRANSLATIONS.pt.scopeContextWindow, 'JANELA DE CONTEXTO', 'scopeContextWindow em PT deve ser JANELA DE CONTEXTO');
+// 6. Specific Key and Quality Validations
+assert.strictEqual(TRANSLATIONS.pt.scopeContextWindow, 'JANELA DE CONTEXTO', 'scopeContextWindow in PT must be JANELA DE CONTEXTO');
 assert.strictEqual(TRANSLATIONS.es.scopeContextWindow, 'VENTANA DE CONTEXTO');
 assert.strictEqual(TRANSLATIONS.fr.scopeContextWindow, 'FENÊTRE DE CONTEXTE');
 assert.strictEqual(TRANSLATIONS.de.scopeContextWindow, 'KONTEXTFENSTER');
@@ -99,13 +99,13 @@ assert.strictEqual(TRANSLATIONS.zh.scopeContextWindow, '上下文窗口');
 assert.strictEqual(TRANSLATIONS.en.scopeContextWindow, 'CONTEXT WINDOW');
 
 for (const loc of expectedLocales) {
-  assert(TRANSLATIONS[loc].optMainConversation.includes('{tokens}'), `optMainConversation em ${loc} deve conter {tokens}`);
-  assert(TRANSLATIONS[loc].languageLabel.length > 0, `languageLabel em ${loc} deve ser não-vazio`);
+  assert(TRANSLATIONS[loc].optMainConversation.includes('{tokens}'), `optMainConversation in ${loc} must contain {tokens}`);
+  assert(TRANSLATIONS[loc].languageLabel.length > 0, `languageLabel in ${loc} must be non-empty`);
 }
-console.log('  ✓ Teste 6 passou: scopeContextWindow, optMainConversation e languageLabel validados em todos os idiomas.');
+console.log('  ✓ Test 6 passed: scopeContextWindow, optMainConversation, and languageLabel validated in all languages.');
 
-// 7. Teste de Lógica de Detecção de Subagente (isScopeSubagent)
-assert(widgetSrc.includes('function isScopeSubagent'), 'widget.js deve implementar a função helper isScopeSubagent');
-console.log('  ✓ Teste 7 passou: isScopeSubagent estruturalmente presente.');
+// 7. Subagent Detection Logic Test (isScopeSubagent)
+assert(widgetSrc.includes('function isScopeSubagent'), 'widget.js must implement helper function isScopeSubagent');
+console.log('  ✓ Test 7 passed: isScopeSubagent structurally present.');
 
-console.log('\n🎉 TODOS OS TESTES UNITÁRIOS DE i18n PASSARAM COM 100% DE SUCESSO!\n');
+console.log('\n🎉 ALL i18n UNIT TESTS PASSED WITH 100% SUCCESS!\n');

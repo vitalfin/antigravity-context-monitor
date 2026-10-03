@@ -4,11 +4,11 @@ import os from 'os';
 import assert from 'assert';
 import { getDevToolsPortFile } from './monitor.mjs';
 
-console.log('🧪 Iniciando Verificação CDP v1.5.0 (i18n 7 Idiomas + Sponsor + Live Antigravity IDE)...');
+console.log('🧪 Starting CDP Verification v1.5.0 (i18n 7 Languages + Sponsor + Live Antigravity IDE)...');
 
 const portFile = getDevToolsPortFile();
 if (!portFile || !fs.existsSync(portFile)) {
-  console.error('DevToolsActivePort não encontrado.');
+  console.error('DevToolsActivePort not found.');
   process.exit(1);
 }
 
@@ -20,11 +20,11 @@ const targets = await res.json();
 const pageTarget = targets.find(t => t.type === 'page' && !t.url.includes('devtools'));
 
 if (!pageTarget) {
-  console.error('Nenhum alvo de página do Antigravity encontrado.');
+  console.error('No Antigravity page target found.');
   process.exit(1);
 }
 
-console.log('Conectado ao alvo CDP:', pageTarget.title, pageTarget.url);
+console.log('Connected to CDP target:', pageTarget.title, pageTarget.url);
 
 const ws = new WebSocket(pageTarget.webSocketDebuggerUrl);
 
@@ -48,12 +48,12 @@ function sendCmd(method, params = {}) {
 
 ws.onopen = async () => {
   try {
-    // 1. Injeta v1.5.0 de widget.js na página
+    // 1. Inject v1.5.0 of widget.js into page
     const widgetSrc = fs.readFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), 'widget.js'), 'utf8');
     await sendCmd('Runtime.evaluate', { expression: 'window.__agyWidgetVersion = null; localStorage.removeItem("agy_locale");' });
     await sendCmd('Runtime.evaluate', { expression: widgetSrc });
 
-    // 2. Valida elementos estruturais v1.5.0 e padrão inglês
+    // 2. Validate structural elements and English default
     const evalResult = await sendCmd('Runtime.evaluate', {
       expression: `(() => {
         const version = window.__agyWidgetVersion;
@@ -88,22 +88,22 @@ ws.onopen = async () => {
     });
 
     const state = evalResult.result.value;
-    console.log('🔍 Elementos v1.5.0 no DOM:', JSON.stringify(state, null, 2));
-    assert.strictEqual(state.version, '1.5.0-i18n-opensource', 'Versão deve ser 1.5.0-i18n-opensource');
-    assert.strictEqual(state.hasWidget, true, 'Widget deve existir');
-    assert.strictEqual(state.hasPopover, true, 'Popover deve existir');
-    assert.strictEqual(state.hasModal, true, 'Modal deve existir');
-    assert.strictEqual(state.hasLangSelect, true, 'Seletor de idioma no modal deve existir');
-    assert.strictEqual(state.hasPopLangSelect, true, 'Seletor de idioma no popover deve existir');
-    assert.strictEqual(state.hasModalSponsor, true, 'Botão de sponsor no modal deve existir');
-    assert.strictEqual(state.modalSponsorHref, 'https://github.com/sponsors/vitalfin', 'Link de sponsor deve apontar para GitHub Sponsors');
-    assert.strictEqual(state.hasPopSponsor, true, 'Botão de sponsor no popover deve existir');
-    assert.strictEqual(state.popSponsorHref, 'https://github.com/sponsors/vitalfin', 'Link de sponsor popover correto');
-    assert.strictEqual(state.currentLocale, 'en', 'Idioma padrão inicial DEVE ser inglês (en)');
-    assert.strictEqual(state.tabOverviewText, 'Overview', 'Aba inicial em inglês deve ser "Overview"');
-    console.log('  ✓ Teste 1 passou: Montagem, seletores de idioma e botão de sponsor v1.5.0 validados com padrão EN.');
+    console.log('🔍 Elements v1.5.0 in DOM:', JSON.stringify(state, null, 2));
+    assert.strictEqual(state.version, '1.5.0-i18n-opensource', 'Version must be 1.5.0-i18n-opensource');
+    assert.strictEqual(state.hasWidget, true, 'Widget must exist');
+    assert.strictEqual(state.hasPopover, true, 'Popover must exist');
+    assert.strictEqual(state.hasModal, true, 'Modal must exist');
+    assert.strictEqual(state.hasLangSelect, true, 'Modal language selector must exist');
+    assert.strictEqual(state.hasPopLangSelect, true, 'Popover language selector must exist');
+    assert.strictEqual(state.hasModalSponsor, true, 'Modal sponsor button must exist');
+    assert.strictEqual(state.modalSponsorHref, 'https://github.com/sponsors/vitalfin', 'Sponsor link must point to GitHub Sponsors');
+    assert.strictEqual(state.hasPopSponsor, true, 'Popover sponsor button must exist');
+    assert.strictEqual(state.popSponsorHref, 'https://github.com/sponsors/vitalfin', 'Popover sponsor link must point to GitHub Sponsors');
+    assert.strictEqual(state.currentLocale, 'en', 'Initial default locale MUST be English (en)');
+    assert.strictEqual(state.tabOverviewText, 'Overview', 'Initial tab text in English must be "Overview"');
+    console.log('  ✓ Test 1 passed: Assembly, language selectors, and sponsor button validated with EN default.');
 
-    // 3. Teste de Alternância Dinâmica de Todos os 7 Idiomas
+    // 3. Dynamic Switching Test across all 7 Locales
     const langTest = await sendCmd('Runtime.evaluate', {
       expression: `(() => {
         const results = {};
@@ -126,7 +126,7 @@ ws.onopen = async () => {
     });
 
     const lRes = langTest.result.value;
-    console.log('🌐 Teste de Alternância de Idiomas:', JSON.stringify(lRes, null, 2));
+    console.log('🌐 Language Switching Test:', JSON.stringify(lRes, null, 2));
 
     assert.strictEqual(lRes.pt.tabOverviewText, 'Visão Geral');
     assert.strictEqual(lRes.pt.tabTipsText, 'Boas Práticas');
@@ -155,9 +155,9 @@ ws.onopen = async () => {
     assert.strictEqual(lRes.en.tabOverviewText, 'Overview');
     assert.strictEqual(lRes.en.tabTipsText, 'Best Practices');
     assert.strictEqual(lRes.en.sponsorText, '💖 Sponsor');
-    console.log('  ✓ Teste 2 passou: Todos os 7 idiomas alternam dinamicamente no DOM com traduções perfeitas.');
+    console.log('  ✓ Test 2 passed: All 7 languages switch dynamically in DOM with translations.');
 
-    // 4. Teste de Detecção de Compactação no Modal com i18n
+    // 4. Multilingual Compaction Detection Test in Modal
     const compTest = await sendCmd('Runtime.evaluate', {
       expression: `(() => {
         window.__agySetLocale('en');
@@ -199,7 +199,7 @@ ws.onopen = async () => {
         window.__agySetLocale('ja');
         const jaText = modalCompTag?.innerText;
 
-        window.__agySetLocale('en'); // restaura en
+        window.__agySetLocale('en'); // restore en
         modal.style.display = 'none';
 
         return {
@@ -212,13 +212,13 @@ ws.onopen = async () => {
     });
 
     const cRes = compTest.result.value;
-    console.log('🔄 Teste de Compactação Multilíngue:', JSON.stringify(cRes, null, 2));
+    console.log('🔄 Multilingual Compaction Test:', JSON.stringify(cRes, null, 2));
     assert.strictEqual(cRes.enText, 'COMPACTED (2x)');
     assert.strictEqual(cRes.ptText, 'COMPACTADO (2x)');
     assert.strictEqual(cRes.jaText, '圧縮済み (2x)');
-    console.log('  ✓ Teste 3 passou: Tag de compactação traduzida e reativa em múltiplos idiomas.');
+    console.log('  ✓ Test 3 passed: Compaction tag translated and reactive across languages.');
 
-    // 5. Teste de Isolamento de Subagente
+    // 5. Subagent Isolation Test
     const isoTest = await sendCmd('Runtime.evaluate', {
       expression: `(async () => {
         const tabSubBtn = document.getElementById('agy-tab-btn-subagents');
@@ -271,12 +271,12 @@ ws.onopen = async () => {
     });
 
     const iRes = isoTest.result.value;
-    console.log('🛡️ Teste de Isolamento de Subagente v1.5.0:', JSON.stringify(iRes, null, 2));
-    assert.strictEqual(iRes.tabSubInSub, 'none', 'Aba Subagentes deve sumir dentro do subagente');
-    assert.notStrictEqual(iRes.tabSubInMain, 'none', 'Aba Subagentes deve estar visível na conversa principal');
-    console.log('  ✓ Teste 4 passou: Isolamento estrito de subagente preservado.');
+    console.log('🛡️ Subagent Isolation Test v1.5.0:', JSON.stringify(iRes, null, 2));
+    assert.strictEqual(iRes.tabSubInSub, 'none', 'Subagents tab must be hidden inside subagent');
+    assert.notStrictEqual(iRes.tabSubInMain, 'none', 'Subagents tab must be visible in main conversation');
+    console.log('  ✓ Test 4 passed: Strict subagent isolation preserved.');
 
-    // 6. Teste de Troca de Idioma na Conversa Principal (NÃO deve virar subagente)
+    // 6. Locale Switch in Main Conversation Test (must not toggle subagent mode)
     const mainSwitchTest = await sendCmd('Runtime.evaluate', {
       expression: `(() => {
         window.__agySetLocale('en');
@@ -299,12 +299,12 @@ ws.onopen = async () => {
     });
 
     const mRes = mainSwitchTest.result.value;
-    console.log('🔄 Teste de Alternância de Idioma na Principal:', JSON.stringify(mRes, null, 2));
-    assert.strictEqual(mRes.subTagAfter, 'none', 'Tag subagente NÃO deve aparecer ao trocar idioma na conversa principal');
-    assert.notStrictEqual(mRes.tabSubBtnAfter, 'none', 'Aba de subagentes DEVE continuar visível após trocar idioma');
-    console.log('  ✓ Teste 5 passou: Alternância de idioma na conversa principal não ativa falsamente modo subagente.');
+    console.log('🔄 Main Conversation Locale Switch Test:', JSON.stringify(mRes, null, 2));
+    assert.strictEqual(mRes.subTagAfter, 'none', 'Subagent tag MUST NOT appear when switching locale in main conversation');
+    assert.notStrictEqual(mRes.tabSubBtnAfter, 'none', 'Subagents tab MUST remain visible after switching locale');
+    console.log('  ✓ Test 5 passed: Locale switch in main conversation does not activate subagent mode.');
 
-    // 7. Teste de Inicialização com Idioma Salvo no localStorage
+    // 7. Startup with Saved Locale in localStorage Test
     const startupTest = await sendCmd('Runtime.evaluate', {
       expression: `(() => {
         localStorage.setItem('agy_locale', 'pt');
@@ -326,17 +326,17 @@ ws.onopen = async () => {
     });
 
     const sRes = startupTest.result.value;
-    console.log('💾 Teste de Inicialização via localStorage:', JSON.stringify(sRes, null, 2));
-    assert.strictEqual(sRes.popLangSelectVal, 'pt', 'Seletor do popover deve inicializar com pt');
-    assert.strictEqual(sRes.lblOperational, 'Uso Operacional:', 'Rótulo operacional deve iniciar em português');
-    assert.strictEqual(sRes.lblRaw, 'Capacidade Bruta:', 'Rótulo de capacidade deve iniciar em português');
-    console.log('  ✓ Teste 6 passou: Idioma salvo em localStorage inicializa perfeitamente popover e seletores.');
+    console.log('💾 localStorage Startup Test:', JSON.stringify(sRes, null, 2));
+    assert.strictEqual(sRes.popLangSelectVal, 'pt', 'Popover selector must initialize with pt');
+    assert.strictEqual(sRes.lblOperational, 'Uso Operacional:', 'Operational label must initialize in Portuguese');
+    assert.strictEqual(sRes.lblRaw, 'Capacidade Bruta:', 'Raw capacity label must initialize in Portuguese');
+    console.log('  ✓ Test 6 passed: Saved locale in localStorage initializes popover and selectors.');
 
-    console.log('\n🎉 TODOS OS TESTES CDP v1.5.0 PASSARAM COM 100% DE SUCESSO!\n');
+    console.log('\n🎉 ALL CDP v1.5.0 TESTS PASSED WITH 100% SUCCESS!\n');
     ws.close();
     process.exit(0);
   } catch (err) {
-    console.error('❌ Erro durante o teste CDP v1.5.0:', err);
+    console.error('❌ Error during CDP v1.5.0 test:', err);
     ws.close();
     process.exit(1);
   }

@@ -10,8 +10,6 @@
 [![i18n](https://img.shields.io/badge/i18n-EN%20%7C%20PT%20%7C%20ES%20%7C%20JA%20%7C%20ZH%20%7C%20FR%20%7C%20DE-blueviolet.svg)](#-native-internationalization-7-languages)
 [![Sponsor](https://img.shields.io/badge/Sponsor-Vitalf%20Technologies-ff69b4.svg)](https://github.com/sponsors/vitalfin)
 
-[English](README.md) • [Português](README.pt-BR.md)
-
 <br/>
 
 <img src="assets/modal-inspector.png" alt="Context Window Inspector Modal" width="800" />

@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-// Dicionário de traduções completo para os 7 idiomas
+// Complete translation dictionary for the 7 supported languages
 const TRANSLATIONS = {
   en: {
     zoneSmartTag: 'SMART ZONE ✓',

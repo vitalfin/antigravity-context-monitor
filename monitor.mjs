@@ -10,7 +10,7 @@ const WIDGET_PATH = fs.existsSync(LOCAL_WIDGET_PATH) ? LOCAL_WIDGET_PATH : LEGAC
 const LOCK_FILE = path.join(os.tmpdir(), 'antigravity-context-monitor.lock');
 
 /**
- * Retorna o caminho do arquivo DevToolsActivePort de acordo com a plataforma (Linux, macOS, Windows).
+ * Returns the DevToolsActivePort file path based on current platform (Linux, macOS, Windows).
  */
 export function getDevToolsPortFile() {
   const candidatePaths = [
@@ -34,7 +34,7 @@ export function getDevToolsPortFile() {
 }
 
 /**
- * Lê a porta CDP atual do Antigravity.
+ * Reads the active CDP port for Antigravity.
  */
 export function getCDPPort() {
   try {
@@ -49,19 +49,19 @@ export function getCDPPort() {
 }
 
 /**
- * Lê o script widget.js do disco.
+ * Reads widget.js script from disk.
  */
 export function getWidgetScript() {
   try {
     return fs.readFileSync(WIDGET_PATH, 'utf8');
   } catch (err) {
-    console.error('Erro ao ler widget.js:', err);
+    console.error('Error reading widget.js:', err);
     return null;
   }
 }
 
 /**
- * Extrai a versão esperada do widget.
+ * Extracts expected widget version.
  */
 export function getExpectedWidgetVersion() {
   const script = getWidgetScript();
@@ -70,7 +70,7 @@ export function getExpectedWidgetVersion() {
 }
 
 /**
- * Garante instância única do monitor para evitar conflitos concorrentes de CDP.
+ * Ensures single instance to avoid duplicate CDP injection cycles.
  */
 export function acquireLock() {
   if (process.env.MONITOR_FORCE === '1' || process.argv.includes('--force')) {
@@ -82,13 +82,13 @@ export function acquireLock() {
       const existingPid = parseInt(fs.readFileSync(LOCK_FILE, 'utf8').trim(), 10);
       if (existingPid && existingPid !== process.pid) {
         try {
-          process.kill(existingPid, 0); // Testa se o processo ainda está vivo
-          console.log(`ℹ️  Antigravity Context Monitor já está ativo no sistema (PID: ${existingPid}).`);
-          console.log('    Se estiver rodando como serviço em segundo plano:');
+          process.kill(existingPid, 0); // Check if process is still alive
+          console.log(`ℹ️  Antigravity Context Monitor is already running (PID: ${existingPid}).`);
+          console.log('    If running as a background service:');
           console.log('    systemctl --user status antigravity-context-monitor.service');
           process.exit(0);
         } catch {
-          // PID anterior não existe mais (stale lock); pode prosseguir
+          // Stale lock from terminated process; proceed
         }
       }
     }
@@ -113,8 +113,8 @@ export function acquireLock() {
 }
 
 /**
- * Conecta via WebSocket CDP e injeta o widget de forma otimizada:
- * Se o widget já estiver ativo e atualizado na página, evita tráfego redundante de 160KB.
+ * Injects widget via CDP WebSocket with lightweight version verification:
+ * If the widget is already active and up-to-date, avoids redundant 160KB payload transmission.
  */
 async function injectIntoPage(wsUrl) {
   return new Promise((resolve) => {
@@ -131,7 +131,7 @@ async function injectIntoPage(wsUrl) {
     }, 4000);
 
     ws.onopen = () => {
-      // 1. Consulta leve sobre o estado da injeção atual na página
+      // 1. Lightweight probe to check if widget is already injected
       ws.send(JSON.stringify({
         id: 1,
         method: 'Runtime.evaluate',
@@ -148,14 +148,14 @@ async function injectIntoPage(wsUrl) {
           const activeVersion = msg.result?.result?.value;
           const expectedVersion = getExpectedWidgetVersion();
 
-          // Se já está ativo com a versão esperada, encerra sem reenviar 160KB
+          // Already running with expected version; close and resolve
           if (activeVersion && activeVersion === expectedVersion) {
             clearTimeout(timer);
             try { ws.close(); } catch {}
             return resolve(true);
           }
 
-          // Se ausente, desatualizado ou página recarregada, envia o script completo
+          // Missing, outdated, or page reloaded; send full script
           const script = getWidgetScript();
           if (!script) {
             clearTimeout(timer);
@@ -215,7 +215,7 @@ function isDirectExecution() {
   }
 }
 
-// Inicialização autônoma se executado diretamente
+// Standalone initialization when run directly
 if (isDirectExecution()) {
   acquireLock();
 
@@ -223,14 +223,14 @@ if (isDirectExecution()) {
     ? 'macOS'
     : (process.platform === 'win32' ? 'Windows' : 'Linux');
 
-  console.log(`🛸 Antigravity Context Monitor (${platformName}) iniciado.`);
-  console.log('Regras de Cores ativas:');
-  console.log('  🟢 0% - 40%:  SMART ZONE (Qualidade alta)');
-  console.log('  🟡 40% - 60%: ATENÇÃO ! Degrada (Amarelo)');
-  console.log('  🔴 > 60%:     DUMB ZONE (Qualidade baixa)');
-  console.log('  💰 v1.2.0:    Preço Previsto & Créditos ativos');
-  console.log('  🛸 v1.3.0:    Portal Popover & Subagent Inspector ativos');
-  console.log('  🛡️ v1.4.0:    Subagent Context Isolation & Compaction Detection ativos');
+  console.log(`🛸 Antigravity Context Monitor (${platformName}) started.`);
+  console.log('Active Color Rules:');
+  console.log('  🟢 0% - 40%:  SMART ZONE (High fidelity)');
+  console.log('  🟡 40% - 60%: WARNING ZONE (Degrading attention)');
+  console.log('  🔴 > 60%:     DUMB ZONE (Critical quality loss)');
+  console.log('  💰 v1.2.0:    Cost Estimation & Credits active');
+  console.log('  🛸 v1.3.0:    Portal Popover & Subagent Inspector active');
+  console.log('  🛡️ v1.4.0:    Subagent Context Isolation & Compaction Detection active');
   console.log('  🌐 v1.5.0:    i18n (7 Languages: EN, PT, ES, JA, ZH, FR, DE) & Sponsor active');
 
   setInterval(runCycle, 4000);
