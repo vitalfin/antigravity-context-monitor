@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 
-console.log('🧪 Starting Cost and Credit tests (v1.2.0)...');
+console.log('🧪 Starting Cost, Credit and Widget Structure tests (v1.6.0)...');
 
 // 1. Pricing Tier Unit Tests
 const PRICING_TIERS = {
@@ -106,7 +106,13 @@ assert(widgetSrc.includes("VERSION = '1.6.0'"), 'widget.js must have VERSION = 1
 assert(widgetSrc.includes("agy-popover-cost"), 'widget.js must contain agy-popover-cost');
 assert(widgetSrc.includes("agy-m-cost"), 'widget.js must contain agy-m-cost');
 assert(widgetSrc.includes("agy-tab-btn-costs"), 'widget.js must contain agy-tab-btn-costs');
-console.log('  ✓ Test 5 passed: Structural integrity of widget.js.');
+assert(widgetSrc.includes("agy-tab-btn-system"), 'widget.js must contain agy-tab-btn-system');
+assert(widgetSrc.includes("agy-tab-count-rules"), 'widget.js must contain agy-tab-count-rules');
+assert(widgetSrc.includes("sectionRulesTitle"), 'widget.js must contain sectionRulesTitle');
+assert(widgetSrc.includes("sectionSkillsTitle"), 'widget.js must contain sectionSkillsTitle');
+assert(widgetSrc.includes("sectionNativeTitle"), 'widget.js must contain sectionNativeTitle');
+assert(widgetSrc.includes("sectionMcpsTitle"), 'widget.js must contain sectionMcpsTitle');
+console.log('  ✓ Test 5 passed: Structural integrity of widget.js (including v1.6.0 Rules & System Inspector).');
 
 // Test 6: Syntax, exports, and resolution of monitor.mjs
 const monitorSrc = fs.readFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), 'monitor.mjs'), 'utf8');

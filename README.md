@@ -4,6 +4,7 @@
 
 **Real-time context gauge, subagent inspector & cost estimator for Google Antigravity.**
 
+[![CI](https://github.com/vitalfin/antigravity-context-monitor/actions/workflows/ci.yml/badge.svg)](https://github.com/vitalfin/antigravity-context-monitor/actions/workflows/ci.yml)
 [![License: BSL 1.1](https://img.shields.io/badge/License-BSL%201.1-blue.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/version-1.6.0-emerald.svg)](package.json)
 [![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](package.json)
@@ -39,7 +40,7 @@ While modern LLMs accept 1M+ tokens, fine-grained reasoning and needle-in-a-hays
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js >= 18.0.0
+- Node.js >= 22.0.0
 - Google Antigravity IDE running on Linux, macOS, or Windows
 
 ### 1. Clone & Run
@@ -126,6 +127,15 @@ npm run test:all
 Maintained with care by **Vitalf Technologies** to empower autonomous AI engineering. If this tool helps your workflow, consider supporting our open-source development:
 
 👉 **[Sponsor Vitalf Technologies on GitHub](https://github.com/sponsors/vitalfin)**
+
+## 🤝 Contributing & Community
+
+Contributions are welcome! Please check out our [Contributing Guide](CONTRIBUTING.md) to get started.
+
+- 📜 [Code of Conduct](CODE_OF_CONDUCT.md)
+- 🔒 [Security Policy](SECURITY.md)
+- 🐛 [Report a Bug](https://github.com/vitalfin/antigravity-context-monitor/issues/new?template=bug_report.md)
+- 💡 [Request a Feature](https://github.com/vitalfin/antigravity-context-monitor/issues/new?template=feature_request.md)
 
 ---
 

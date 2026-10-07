@@ -111,9 +111,12 @@ ws.onopen = async () => {
     // assertions for each locale (sample for pt and en)
     assert.strictEqual(lRes.pt.tabOverviewText, 'Visão Geral');
     assert.strictEqual(lRes.pt.tabTipsText, 'Boas Práticas');
+    assert.strictEqual(lRes.pt.modalTitle, 'Inspetor de Janela de Contexto');
     assert.strictEqual(lRes.pt.sponsorText, '💖 Apoiar');
+    assert.strictEqual(lRes.es.modalTitle, 'Inspector de Ventana de Contexto');
     assert.strictEqual(lRes.en.tabOverviewText, 'Overview');
     assert.strictEqual(lRes.en.tabTipsText, 'Best Practices');
+    assert.strictEqual(lRes.en.modalTitle, 'Context Window Inspector');
     assert.strictEqual(lRes.en.sponsorText, '💖 Sponsor');
     console.log('  ✓ Test 2 passed: Multilingual UI strings verified');
 

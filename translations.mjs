@@ -179,7 +179,7 @@ const TRANSLATIONS = {
     subagentsIsolated: 'Subagentes (Isolados)',
     subagentsHint: 'Contextos independentes (não somam na principal):',
     btnInspect: '🔍 Inspecionar Contexto Completo',
-    modalTitle: 'Context Window Inspector',
+    modalTitle: 'Inspetor de Janela de Contexto',
     modalSubagentTag: '🤖 SUBAGENTE',
     modalCompactedTag: 'COMPACTADO ({count}x)',
     modalCompactedTooltip: 'O Antigravity realizou {count} compactação(ões) automática(s) de histórico nesta sessão para manter a atenção afiada do modelo.',

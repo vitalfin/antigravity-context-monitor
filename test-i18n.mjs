@@ -2,7 +2,7 @@ import assert from 'assert';
 import fs from 'fs';
 import path from 'path';
 
-console.log('🧪 Starting Internationalization (i18n) and Sponsor Unit Tests (v1.5.0)...');
+console.log('🧪 Starting Internationalization (i18n) and Sponsor Unit Tests (v1.6.0)...');
 
 const widgetPath = path.join(path.dirname(new URL(import.meta.url).pathname), 'widget.js');
 const widgetSrc = fs.readFileSync(widgetPath, 'utf8');
@@ -15,7 +15,7 @@ assert(widgetSrc.includes('agy-lang-select'), 'widget.js must contain the langua
 assert(widgetSrc.includes('agy-modal-sponsor'), 'widget.js must contain the sponsor button agy-modal-sponsor');
 assert(widgetSrc.includes('https://github.com/sponsors/vitalfin'), 'widget.js must point to the GitHub sponsor link');
 
-console.log('  ✓ Test 1 passed: Syntax and structural elements for v1.5.0 present.');
+console.log('  ✓ Test 1 passed: Syntax and structural elements for v1.6.0 present.');
 
 // 2. Extract translations from widget.js for exhaustive symmetry testing
 const matchTranslations = widgetSrc.match(/const TRANSLATIONS = ({[\s\S]*?\n  };)/);
@@ -107,5 +107,31 @@ console.log('  ✓ Test 6 passed: scopeContextWindow, optMainConversation, and l
 // 7. Subagent Detection Logic Test (isScopeSubagent)
 assert(widgetSrc.includes('function isScopeSubagent'), 'widget.js must implement helper function isScopeSubagent');
 console.log('  ✓ Test 7 passed: isScopeSubagent structurally present.');
+
+// 8. v1.6.0 Rules & System Inspector Translations and Interpolation
+assert.strictEqual(TRANSLATIONS.pt.modalTitle, 'Inspetor de Janela de Contexto', 'modalTitle in PT must be Inspetor de Janela de Contexto');
+assert.strictEqual(TRANSLATIONS.es.modalTitle, 'Inspector de Ventana de Contexto');
+assert.strictEqual(TRANSLATIONS.en.modalTitle, 'Context Window Inspector');
+
+for (const loc of expectedLocales) {
+  assert(TRANSLATIONS[loc].tabSystem.includes('{count}'), `tabSystem in ${loc} must contain {count}`);
+  assert(TRANSLATIONS[loc].sectionRulesTitle.length > 0, `sectionRulesTitle in ${loc} must be non-empty`);
+  assert(TRANSLATIONS[loc].sectionSkillsTitle.length > 0, `sectionSkillsTitle in ${loc} must be non-empty`);
+  assert(TRANSLATIONS[loc].sectionNativeTitle.length > 0, `sectionNativeTitle in ${loc} must be non-empty`);
+  assert(TRANSLATIONS[loc].sectionMcpsTitle.length > 0, `sectionMcpsTitle in ${loc} must be non-empty`);
+
+  const skillsText = formatMessage(loc, 'skillsSummaryText', { count: 5, wsCount: 2, globCount: 2, builtCount: 1 });
+  assert(!skillsText.includes('{') && !skillsText.includes('}'), `skillsSummaryText in ${loc} failed interpolation: ${skillsText}`);
+
+  const nativeText = formatMessage(loc, 'nativeSummaryText', { toolsCount: 8, toolsList: 'view_file, run_command', sectionsCount: 4 });
+  assert(!nativeText.includes('{') && !nativeText.includes('}'), `nativeSummaryText in ${loc} failed interpolation: ${nativeText}`);
+
+  const mcpsText = formatMessage(loc, 'mcpsSummaryText', { count: 2, toolsCount: 10 });
+  assert(!mcpsText.includes('{') && !mcpsText.includes('}'), `mcpsSummaryText in ${loc} failed interpolation: ${mcpsText}`);
+
+  const sysBannerText = formatMessage(loc, 'systemBannerDesc', { tokens: '14.5k' });
+  assert(!sysBannerText.includes('{') && !sysBannerText.includes('}'), `systemBannerDesc in ${loc} failed interpolation: ${sysBannerText}`);
+}
+console.log('  ✓ Test 8 passed: v1.6.0 Rules & System Inspector translations and dynamic interpolations validated across all 7 languages.');
 
 console.log('\n🎉 ALL i18n UNIT TESTS PASSED WITH 100% SUCCESS!\n');
