@@ -3,7 +3,7 @@ import path from 'path';
 import assert from 'assert';
 import { getDevToolsPortFile } from './monitor.mjs';
 
-console.log('🧪 Starting unified CDP Integration Test (v1.5.1)');
+console.log('🧪 Starting unified CDP Integration Test (v1.6.0)');
 
 const portFile = getDevToolsPortFile();
 if (!portFile || !fs.existsSync(portFile)) {

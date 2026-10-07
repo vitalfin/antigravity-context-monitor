@@ -27,17 +27,21 @@ To add a new language or refine existing translations:
 1. Update `translations.mjs` with your locale additions.
 2. Ensure 100% key parity with `en`.
 3. Run `npm test` to verify dictionary symmetry and integrity.
-4. Run `node generate-widget.mjs` to compile into `widget.js`.
+4. Run `npm run build` (or `node generate-widget.mjs`) to compile into `widget.js`.
 
-### 2. Running Tests
+### 2. Running Tests & Building Widget
 
-Before submitting a Pull Request, verify that all tests pass:
+Before submitting a Pull Request, verify that all tests pass and generated artifacts are up-to-date:
 
 ```bash
 # Run unit tests (i18n dictionary parity + cost calculations)
 npm test
 
-# Run full CDP live integration tests against Antigravity
+# Build and verify widget artifact synchronization
+npm run build
+git diff --exit-code widget.js
+
+# Run full CDP live integration tests against Antigravity (optional, requires running IDE)
 npm run test:cdp
 
 # Run all test suites
