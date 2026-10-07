@@ -21,7 +21,7 @@ We provide security updates for the latest minor releases:
 If you discover a security vulnerability in Antigravity Context Monitor, please do **NOT** open a public issue.
 
 Instead, please report the vulnerability confidentially:
-- Email: [contact@vitalf.ai](mailto:contact@vitalf.ai)
+- Email: [contact@vitalf.in](mailto:contact@vitalf.in)
 - Or use GitHub's [Private Vulnerability Reporting](https://github.com/vitalfin/antigravity-context-monitor/security/advisories/new) feature on the repository.
 
 Please include:

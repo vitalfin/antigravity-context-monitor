@@ -147,4 +147,4 @@ Distributed under the **Business Source License 1.1 (BSL 1.1)**.
 - **Commercial & Native Platform Protection**: Incorporation, embedding, or distribution of this software into commercial development platforms, commercial IDEs, or managed cloud services requires a separate commercial license granted in writing by **Vitalf Technologies**.
 - **Open Source Transition**: On **October 3, 2028**, this version automatically converts to the **MIT License**.
 
-See [LICENSE](LICENSE) for complete terms, or contact `contact@vitalf.ai` for commercial licensing inquiries.
+See [LICENSE](LICENSE) for complete terms, or contact `contact@vitalf.in` for commercial licensing inquiries.

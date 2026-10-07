@@ -6,7 +6,7 @@ Thank you for your interest in contributing to **Antigravity Context Monitor**! 
 
 ## Code of Conduct
 
-We are committed to providing a welcoming, diverse, and harassment-free community. All participants, contributors, and maintainers are expected to adhere to our [Code of Conduct](CODE_OF_CONDUCT.md). Please report any violations to [contact@vitalf.ai](mailto:contact@vitalf.ai).
+We are committed to providing a welcoming, diverse, and harassment-free community. All participants, contributors, and maintainers are expected to adhere to our [Code of Conduct](CODE_OF_CONDUCT.md). Please report any violations to [contact@vitalf.in](mailto:contact@vitalf.in).
 
 ---
 
