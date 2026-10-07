@@ -7,7 +7,7 @@ const widgetJsContent = `(() => {
   const BREADCRUMB_WIDGET_ID = 'agy-breadcrumb-context-widget';
   const MODAL_ID = 'agy-context-inspector-modal';
   const POPOVER_ID = 'agy-zone-popover';
-  const VERSION = '1.5.0-i18n-opensource';
+  const VERSION = '1.6.0';
 
   if (window.__agyWidgetVersion === VERSION && (document.getElementById(WIDGET_ID) || document.getElementById(BREADCRUMB_WIDGET_ID))) {
     return;
@@ -345,6 +345,25 @@ const widgetJsContent = `(() => {
   window.__agySetLocale = setLocale;
   window.__agyGetLocale = () => currentLocale;
 
+
+  async function callLSS(endpoint, body = {}) {
+    try {
+      const token = window.__APP_CONFIG__?.csrfToken;
+      const res = await fetch('/exa.language_server_pb.LanguageServerService/' + endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-codeium-csrf-token': token
+        },
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch (e) {
+      return null;
+    }
+  }
+
   async function fetchContextDetails(cascadeId) {
     if (!cascadeId) return null;
     try {
@@ -466,6 +485,143 @@ const widgetJsContent = `(() => {
       // Base system prompt tokens
       const systemTokensEst = firstUsage ? Math.max(5000, Number(firstUsage.inputTokens || 0) - totalUserTokens) : 19000;
 
+
+      // Discover workspace directory, active rules, skills, and MCPs
+      let workspaceDir = null;
+      for (const s of steps) {
+        if (s.metadata?.toolCall?.argumentsJson) {
+          try {
+            const args = JSON.parse(s.metadata.toolCall.argumentsJson);
+            const p = args.Cwd || args.AbsolutePath || args.TargetFile;
+            if (p && typeof p === 'string' && p.startsWith('/')) {
+              const wsIdx = p.indexOf('/workspace');
+              if (wsIdx !== -1) {
+                workspaceDir = p.slice(0, wsIdx + '/workspace'.length);
+                break;
+              }
+            }
+          } catch (e) {}
+        }
+      }
+      if (!workspaceDir) {
+        workspaceDir = '/home/ph/projects/vitalf/code/workspace';
+      }
+
+      const step0 = steps[0];
+      const promptSections = step0?.userInput?.userConfig?.plannerConfig?.declarativeMixinConfig?.promptSections?.map(s => s.builtinName) || [];
+      const nativeTools = step0?.userInput?.userConfig?.plannerConfig?.declarativeMixinConfig?.tools?.map(t => t.name) || [];
+
+      // 1. Fetch Global Rules
+      const rulesList = [];
+      const allRulesRes = await callLSS('GetAllRules');
+      if (allRulesRes?.memories) {
+        for (const m of allRulesRes.memories) {
+          const content = m.textMemory?.content || '';
+          const bytes = content.length;
+          rulesList.push({
+            name: m.memoryId || 'user_global',
+            path: m.absolutePath || m.discoveredIn || '~/.gemini/GEMINI.md',
+            scope: 'global',
+            status: 'always_on',
+            bytes: bytes,
+            tokensEst: toTokens(bytes),
+            contentPreview: content.slice(0, 300)
+          });
+        }
+      }
+
+      // 2. Fetch Workspace Rules (AGENTS.md, GEMINI.md, and .agents/rules/*.md)
+      if (workspaceDir) {
+        const checkFiles = ['AGENTS.md', 'GEMINI.md'];
+        for (const fn of checkFiles) {
+          const filePath = workspaceDir + '/' + fn;
+          const rf = await callLSS('ReadFile', { uri: 'file://' + filePath });
+          if (rf?.content) {
+            try {
+              const raw = atob(rf.content);
+              rulesList.push({
+                name: fn,
+                path: filePath,
+                scope: 'workspace',
+                status: 'always_on',
+                bytes: raw.length,
+                tokensEst: toTokens(raw.length),
+                contentPreview: raw.slice(0, 350)
+              });
+            } catch (e) {}
+          }
+        }
+
+        const dirRes = await callLSS('ReadDir', { uri: 'file://' + workspaceDir + '/.agents/rules' });
+        if (dirRes?.entries) {
+          for (const entry of dirRes.entries) {
+            const p = entry.uri.replace('file://', '');
+            const fn = p.split('/').pop();
+            const rf = await callLSS('ReadFile', { uri: entry.uri });
+            if (rf?.content) {
+              try {
+                const raw = atob(rf.content);
+                const isConditional = raw.includes('trigger: model_decision') || fn.includes('how-to-run-tests');
+                rulesList.push({
+                  name: fn,
+                  path: p,
+                  scope: 'workspace',
+                  status: isConditional ? 'conditional' : 'always_on',
+                  bytes: raw.length,
+                  tokensEst: toTokens(raw.length),
+                  contentPreview: raw.slice(0, 350)
+                });
+              } catch (e) {}
+            }
+          }
+        }
+      }
+
+      // 3. Fetch Skills & Plugins
+      const custRes = await callLSS('GetCustomizationStates');
+      const skillsList = [];
+      if (custRes?.states) {
+        for (const st of custRes.states) {
+          if (st.type === 'REFRESH_CUSTOMIZATION_TYPE_SKILL' && st.status === 'STATUS_ENABLED') {
+            skillsList.push({
+              name: st.name,
+              path: st.path,
+              scope: st.scope === 'SCOPE_WORKSPACE' ? 'workspace' : (st.scope === 'SCOPE_BUILTIN' ? 'builtin' : 'global'),
+              pluginName: st.pluginName
+            });
+          }
+        }
+      }
+
+      // 4. Fetch MCP Servers
+      const mcpRes = await callLSS('GetMcpServerStates');
+      const mcpsList = [];
+      if (mcpRes?.states) {
+        for (const [k, v] of Object.entries(mcpRes.states)) {
+          mcpsList.push({
+            name: k,
+            toolsCount: v.tools?.length || 0,
+            status: v.status || 'CONNECTED'
+          });
+        }
+      }
+
+      const totalRulesTokens = rulesList.filter(r => r.status === 'always_on').reduce((acc, r) => acc + r.tokensEst, 0);
+
+      const systemDetails = {
+        workspaceDir,
+        rules: rulesList,
+        rulesCount: rulesList.length,
+        rulesTokensTotal: totalRulesTokens,
+        skills: skillsList,
+        skillsCount: skillsList.length,
+        mcps: mcpsList,
+        mcpsCount: mcpsList.length,
+        mcpsToolsCount: mcpsList.reduce((acc, m) => acc + m.toolsCount, 0),
+        promptSections,
+        nativeTools
+      };
+
       const pricing = getModelPricing(latestUsage?.model, totalTokens);
       const costs = calculateCosts(inputTokens, cachedTokens, outputTokens, pricing);
 
@@ -490,7 +646,8 @@ const widgetJsContent = `(() => {
         commands: commandsSorted,
         filesCount: filesList.length,
         commandsCount: commandsSorted.length,
-        latestUsage
+        latestUsage,
+        systemDetails
       };
 
       contextCache.set(cascadeId, result);
@@ -944,6 +1101,7 @@ const widgetJsContent = `(() => {
       <div style="display: flex; padding: 0 18px; border-bottom: 1px solid var(--border, rgba(255,255,255,0.1)); background: color-mix(in srgb, var(--foreground, #fff) 1.5%, transparent); gap: 16px;">
         <button id="agy-tab-btn-overview" type="button" class="agy-tab-btn" data-tab="overview" style="background: transparent; border: none; border-bottom: 2px solid #22c55e; color: #22c55e; font-size: 11.5px; font-weight: 600; padding: 8px 2px; cursor: pointer;">Overview</button>
         <button id="agy-tab-btn-costs" type="button" class="agy-tab-btn" data-tab="costs" style="background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--muted-foreground, #999); font-size: 11.5px; font-weight: 600; padding: 8px 2px; cursor: pointer;">💳 Costs & Credits</button>
+        <button id="agy-tab-btn-system" type="button" class="agy-tab-btn" data-tab="system" style="background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--muted-foreground, #999); font-size: 11.5px; font-weight: 600; padding: 8px 2px; cursor: pointer;">🧠 Rules & System (<span id="agy-tab-count-rules">0</span>)</button>
         <button id="agy-tab-btn-files" type="button" class="agy-tab-btn" data-tab="files" style="background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--muted-foreground, #999); font-size: 11.5px; font-weight: 600; padding: 8px 2px; cursor: pointer;">Files (<span id="agy-tab-count-files">0</span>)</button>
         <button id="agy-tab-btn-commands" type="button" class="agy-tab-btn" data-tab="commands" style="background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--muted-foreground, #999); font-size: 11.5px; font-weight: 600; padding: 8px 2px; cursor: pointer;">Commands (<span id="agy-tab-count-commands">0</span>)</button>
         <button id="agy-tab-btn-subagents" type="button" class="agy-tab-btn" data-tab="subagents" style="background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--muted-foreground, #999); font-size: 11.5px; font-weight: 600; padding: 8px 2px; cursor: pointer;">Subagents (<span id="agy-tab-count-subagents">0</span>)</button>
@@ -1013,6 +1171,7 @@ const widgetJsContent = `(() => {
 
     if (el('agy-tab-btn-overview')) el('agy-tab-btn-overview').innerText = t('tabOverview');
     if (el('agy-tab-btn-costs')) el('agy-tab-btn-costs').innerText = t('tabCosts');
+    if (el('agy-tab-btn-system')) el('agy-tab-btn-system').innerHTML = t('tabSystem', { count: currentContextData?.systemDetails?.rules?.length || 0 });
     if (el('agy-tab-btn-tips')) el('agy-tab-btn-tips').innerText = t('tabTips');
 
     const popLangSelect = el('agy-popover-lang-select');
@@ -1154,6 +1313,7 @@ const widgetJsContent = `(() => {
 
     const tabFilesBtn = document.getElementById('agy-tab-btn-files');
     const tabCmdsBtn = document.getElementById('agy-tab-btn-commands');
+    const tabSystemBtn = document.getElementById('agy-tab-btn-system');
 
     if (!data || data.totalTokens === 0) {
       if (mTag) {
@@ -1180,6 +1340,7 @@ const widgetJsContent = `(() => {
 
       if (tabFilesBtn) tabFilesBtn.innerHTML = t('tabFiles', { count: 0 });
       if (tabCmdsBtn) tabCmdsBtn.innerHTML = t('tabCommands', { count: 0 });
+      if (tabSystemBtn) tabSystemBtn.innerHTML = t('tabSystem', { count: 0 });
 
       renderModalTab(activeTab, null);
       return;
@@ -1210,20 +1371,21 @@ const widgetJsContent = `(() => {
       mCostSub.title = t('cacheSavingsTooltip', { usd: formatUSD(costs.savedCost) });
     }
 
-    if (mFiles) mFiles.innerText = t('filesCountUnit', { count: data.filesCount });
-    if (mFilesTokens) mFilesTokens.innerText = t('estTokens', { tokens: formatTokens(data.breakdown.files) });
+    const breakdown = data.breakdown || { system: 0, files: 0, commands: 0, dialogue: 0 };
+    if (mFiles) mFiles.innerText = t('filesCountUnit', { count: data.filesCount || 0 });
+    if (mFilesTokens) mFilesTokens.innerText = t('estTokens', { tokens: formatTokens(breakdown.files) });
 
-    if (mCmds) mCmds.innerText = t('cmdsCountUnit', { count: data.commandsCount });
-    if (mCmdsTokens) mCmdsTokens.innerText = t('estTokens', { tokens: formatTokens(data.breakdown.commands) });
+    if (mCmds) mCmds.innerText = t('cmdsCountUnit', { count: data.commandsCount || 0 });
+    if (mCmdsTokens) mCmdsTokens.innerText = t('estTokens', { tokens: formatTokens(breakdown.commands) });
 
     if (mRawRatio) mRawRatio.innerText = t('rawRatioText', { tokens: formatTokens(totalTokens), pct: rawPct });
 
     // Load category segment bar normalization
-    const rawSum = (data.breakdown.system || 0) + (data.breakdown.files || 0) + (data.breakdown.commands || 0) + (data.breakdown.dialogue || 0);
+    const rawSum = (breakdown.system || 0) + (breakdown.files || 0) + (breakdown.commands || 0) + (breakdown.dialogue || 0);
     const normBase = Math.max(totalTokens, rawSum, 1);
-    const bSysPct = Math.round(((data.breakdown.system || 0) / normBase) * 100);
-    const bFilesPct = Math.round(((data.breakdown.files || 0) / normBase) * 100);
-    const bCmdsPct = Math.round(((data.breakdown.commands || 0) / normBase) * 100);
+    const bSysPct = Math.round(((breakdown.system || 0) / normBase) * 100);
+    const bFilesPct = Math.round(((breakdown.files || 0) / normBase) * 100);
+    const bCmdsPct = Math.round(((breakdown.commands || 0) / normBase) * 100);
     const bDiagPct = Math.max(0, 100 - (bSysPct + bFilesPct + bCmdsPct));
 
     if (bSys) bSys.style.width = bSysPct + '%';
@@ -1233,6 +1395,7 @@ const widgetJsContent = `(() => {
 
     if (tabFilesBtn) tabFilesBtn.innerHTML = t('tabFiles', { count: data.filesCount });
     if (tabCmdsBtn) tabCmdsBtn.innerHTML = t('tabCommands', { count: data.commandsCount });
+    if (tabSystemBtn) tabSystemBtn.innerHTML = t('tabSystem', { count: data.systemDetails?.rules?.length || 0 });
 
     renderModalTab(activeTab, data);
   }
@@ -1331,20 +1494,23 @@ const widgetJsContent = `(() => {
               <span style="color: var(--muted-foreground, #999); font-weight: 400;">\${t('totalActiveTokens', { tokens: formatTokens(data.totalTokens) })}</span>
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-              <div style="padding: 8px; background: rgba(168, 85, 247, 0.08); border-radius: 6px; border-left: 3px solid #a855f7;">
-                <div style="font-weight: 600; color: #c084fc;">\${t('cardSystemTitle', { tokens: formatTokens(data.breakdown.system) })}</div>
-                <div style="font-size: 10px; color: var(--muted-foreground, #aaa); margin-top: 2px;">\${t('cardSystemDesc')}</div>
+              <div style="padding: 8px; background: rgba(168, 85, 247, 0.08); border-radius: 6px; border-left: 3px solid #a855f7; display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                  <div style="font-weight: 600; color: #c084fc;">\${t('cardSystemTitle', { tokens: formatTokens(data.breakdown?.system || 0) })}</div>
+                  <div style="font-size: 10px; color: var(--muted-foreground, #aaa); margin-top: 2px;">\${t('cardSystemDesc')}</div>
+                </div>
+                <button id="agy-link-all-system" type="button" style="align-self: flex-start; margin-top: 6px; background: none; border: none; color: #c084fc; font-size: 10px; cursor: pointer; text-decoration: underline; padding: 0;">\${t('btnInspectSystem')}</button>
               </div>
               <div style="padding: 8px; background: rgba(59, 130, 246, 0.08); border-radius: 6px; border-left: 3px solid #3b82f6;">
-                <div style="font-weight: 600; color: #60a5fa;">\${t('cardFilesTitle', { tokens: formatTokens(data.breakdown.files) })}</div>
-                <div style="font-size: 10px; color: var(--muted-foreground, #aaa); margin-top: 2px;">\${t('cardFilesDesc', { count: data.filesCount })}</div>
+                <div style="font-weight: 600; color: #60a5fa;">\${t('cardFilesTitle', { tokens: formatTokens(data.breakdown?.files || 0) })}</div>
+                <div style="font-size: 10px; color: var(--muted-foreground, #aaa); margin-top: 2px;">\${t('cardFilesDesc', { count: data.filesCount || 0 })}</div>
               </div>
               <div style="padding: 8px; background: rgba(249, 115, 22, 0.08); border-radius: 6px; border-left: 3px solid #f97316;">
-                <div style="font-weight: 600; color: #fb923c;">\${t('cardCmdsTitle', { tokens: formatTokens(data.breakdown.commands) })}</div>
-                <div style="font-size: 10px; color: var(--muted-foreground, #aaa); margin-top: 2px;">\${t('cardCmdsDesc', { count: data.commandsCount })}</div>
+                <div style="font-weight: 600; color: #fb923c;">\${t('cardCmdsTitle', { tokens: formatTokens(data.breakdown?.commands || 0) })}</div>
+                <div style="font-size: 10px; color: var(--muted-foreground, #aaa); margin-top: 2px;">\${t('cardCmdsDesc', { count: data.commandsCount || 0 })}</div>
               </div>
               <div style="padding: 8px; background: rgba(16, 185, 129, 0.08); border-radius: 6px; border-left: 3px solid #10b981;">
-                <div style="font-weight: 600; color: #34d399;">\${t('cardDialogueTitle', { tokens: formatTokens(data.breakdown.dialogue) })}</div>
+                <div style="font-weight: 600; color: #34d399;">\${t('cardDialogueTitle', { tokens: formatTokens(data.breakdown?.dialogue || 0) })}</div>
                 <div style="font-size: 10px; color: var(--muted-foreground, #aaa); margin-top: 2px;">\${t('cardDialogueDesc')}</div>
               </div>
             </div>
@@ -1354,10 +1520,10 @@ const widgetJsContent = `(() => {
           <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border, rgba(255,255,255,0.08)); border-radius: 8px; padding: 12px;">
             <div style="font-weight: 600; margin-bottom: 6px; font-size: 12px; display: flex; justify-content: space-between;">
               <span>\${t('topConsumersTitle')}</span>
-              <button id="agy-link-all-files" type="button" style="background: none; border: none; color: #38bdf8; font-size: 10.5px; cursor: pointer; text-decoration: underline;">\${t('viewAllBtn', { count: data.filesCount })}</button>
+              <button id="agy-link-all-files" type="button" style="background: none; border: none; color: #38bdf8; font-size: 10.5px; cursor: pointer; text-decoration: underline;">\${t('viewAllBtn', { count: data.filesCount || 0 })}</button>
             </div>
             <div style="display: flex; flex-direction: column; gap: 4px;">
-              \${data.files.slice(0, 5).map((f, idx) => \`
+              \${(data.files || []).slice(0, 5).map((f, idx) => \`
                 <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 6px; background: rgba(255,255,255,0.02); border-radius: 4px; font-size: 11px;">
                   <div style="display: flex; align-items: center; gap: 6px; overflow: hidden;">
                     <span style="opacity: 0.6; font-size: 10px;">#\${idx + 1}</span>
@@ -1370,7 +1536,7 @@ const widgetJsContent = `(() => {
                   </div>
                 </div>
               \`).join('')}
-              \${data.files.length === 0 ? '<div style="color: var(--muted-foreground, #888); font-size: 11px; text-align: center; padding: 10px;">' + t('noFilesYet') + '</div>' : ''}
+              \${(!data.files || data.files.length === 0) ? '<div style="color: var(--muted-foreground, #888); font-size: 11px; text-align: center; padding: 10px;">' + t('noFilesYet') + '</div>' : ''}
             </div>
           </div>
 
@@ -1383,10 +1549,148 @@ const widgetJsContent = `(() => {
         renderModalWithData(currentContextData, t('scopeMainConversation'));
       });
 
+      container.querySelector('#agy-link-all-system')?.addEventListener('click', () => {
+        const btn = document.querySelector('.agy-tab-btn[data-tab="system"]');
+        if (btn) btn.click();
+      });
+
       container.querySelector('#agy-link-all-files')?.addEventListener('click', () => {
         const btn = document.querySelector('.agy-tab-btn[data-tab="files"]');
         if (btn) btn.click();
       });
+
+    } else if (tab === 'system') {
+      const sys = data.systemDetails || { rules: [], skills: [], mcps: [], promptSections: [], nativeTools: [] };
+      const rules = sys.rules || [];
+      const skills = sys.skills || [];
+      const mcps = sys.mcps || [];
+      const nativeTools = sys.nativeTools || [];
+      const promptSections = sys.promptSections || [];
+      const wsSkillsCount = skills.filter(s => s.scope === 'workspace').length;
+      const globSkillsCount = skills.filter(s => s.scope === 'global').length;
+      const builtSkillsCount = skills.filter(s => s.scope === 'builtin').length;
+
+      container.innerHTML = \`
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+
+          <!-- System Architecture Banner -->
+          <div style="padding: 10px 14px; background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.25); border-radius: 8px; display: flex; align-items: flex-start; gap: 10px;">
+            <span style="font-size: 18px;">🧠</span>
+            <div style="flex: 1;">
+              <div style="font-weight: 600; color: #c084fc; font-size: 12px; display: flex; justify-content: space-between; align-items: center;">
+                <span>\${t('systemBannerTitle')}</span>
+                <span style="font-size: 11px; padding: 2px 7px; border-radius: 4px; background: rgba(168, 85, 247, 0.2); color: #d8b4fe;">~\${formatTokens(data.breakdown.system)} tokens</span>
+              </div>
+              <div style="font-size: 10.5px; color: var(--muted-foreground, #ccc); margin-top: 3px; line-height: 1.45;">
+                \${t('systemBannerDesc', { tokens: formatTokens(data.breakdown.system) })}
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 1: Active Rules & Context Files -->
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border, rgba(255,255,255,0.08)); border-radius: 8px; padding: 12px;">
+            <div style="font-weight: 600; margin-bottom: 8px; font-size: 12px; display: flex; justify-content: space-between; align-items: center;">
+              <span>\${t('sectionRulesTitle')}</span>
+              <span style="font-size: 10px; color: #c084fc; font-weight: 600;">~\${formatTokens(sys.rulesTokensTotal || 0)} tokens (\${rules.length} files)</span>
+            </div>
+            \${rules.length === 0 ? \`<div style="text-align: center; padding: 14px; color: var(--muted-foreground, #888); font-size: 11px;">\${t('noRulesFound')}</div>\` : \`
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                <div style="display: grid; grid-template-columns: 2fr 110px 100px 140px; padding: 4px 8px; font-weight: 600; font-size: 10px; color: var(--muted-foreground, #888); border-bottom: 1px solid var(--border, rgba(255,255,255,0.08));">
+                  <span>\${t('colRuleName')}</span>
+                  <span>\${t('colRuleScope')}</span>
+                  <span style="text-align: right;">\${t('colRuleTokens')}</span>
+                  <span style="text-align: right;">\${t('colRuleStatus')}</span>
+                </div>
+                \${rules.map((r) => \`
+                  <div class="agy-table-row" style="display: flex; flex-direction: column; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); border-radius: 6px; padding: 7px 8px; font-size: 11px; transition: background 0.15s;">
+                    <div style="display: grid; grid-template-columns: 2fr 110px 100px 140px; align-items: center;">
+                      <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="\${r.path}">
+                        <span style="font-weight: 600; color: #fff;">\${r.name}</span>
+                        <span style="font-size: 9.5px; opacity: 0.6; margin-left: 6px;">(\${formatBytes(r.bytes)})</span>
+                      </div>
+                      <div>
+                        <span style="font-size: 9.5px; padding: 1px 5px; border-radius: 3px; background: \${r.scope === 'global' ? 'rgba(234, 179, 8, 0.15)' : 'rgba(59, 130, 246, 0.15)'}; color: \${r.scope === 'global' ? '#fde047' : '#93c5fd'};">
+                          \${r.scope === 'global' ? t('scopeGlobal') : t('scopeWorkspace')}
+                        </span>
+                      </div>
+                      <span style="text-align: right; font-weight: 600; color: #c084fc; font-variant-numeric: tabular-nums;">~\${formatTokens(r.tokensEst)}</span>
+                      <div style="text-align: right;">
+                        <span style="font-size: 9.5px; padding: 1px 6px; border-radius: 3px; background: \${r.status === 'always_on' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(148, 163, 184, 0.15)'}; color: \${r.status === 'always_on' ? '#4ade80' : '#cbd5e1'}; font-weight: 500;">
+                          \${r.status === 'always_on' ? t('ruleAlwaysOn') : t('ruleConditional')}
+                        </span>
+                      </div>
+                    </div>
+                    \${r.contentPreview ? \`
+                      <details style="margin-top: 5px; font-size: 10px;">
+                        <summary style="cursor: pointer; color: #38bdf8; opacity: 0.85; user-select: none;">\${t('previewBtn')}</summary>
+                        <pre style="margin: 4px 0 0 0; padding: 6px; background: rgba(0,0,0,0.3); border-radius: 4px; overflow-x: auto; white-space: pre-wrap; font-family: monospace; color: #bbb; max-height: 85px;">\${r.contentPreview}...</pre>
+                      </details>
+                    \` : ''}
+                  </div>
+                \`).join('')}
+              </div>
+            \`}
+          </div>
+
+          <!-- Section 2: Skills Catalog -->
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border, rgba(255,255,255,0.08)); border-radius: 8px; padding: 12px;">
+            <div style="font-weight: 600; margin-bottom: 6px; font-size: 12px; display: flex; justify-content: space-between; align-items: center;">
+              <span>\${t('sectionSkillsTitle')}</span>
+              <span style="font-size: 10px; color: #38bdf8; font-weight: 600;">\${skills.length} skills (~\${formatTokens(skills.length * 120)} tokens)</span>
+            </div>
+            <div style="font-size: 10px; color: var(--muted-foreground, #aaa); margin-bottom: 8px; line-height: 1.4;">
+              \${t('skillsSummaryText', { count: skills.length, wsCount: wsSkillsCount, globCount: globSkillsCount, builtCount: builtSkillsCount })}
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 5px;">
+              \${skills.map(s => \`
+                <span style="font-size: 10px; padding: 2px 6px; border-radius: 4px; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.2); color: #7dd3fc;" title="\${s.path}">
+                  \${s.name} <span style="opacity: 0.6; font-size: 8.5px;">(\${s.scope === 'builtin' ? t('scopeBuiltin') : (s.scope === 'workspace' ? t('scopeWorkspace') : t('scopeGlobal'))})</span>
+                </span>
+              \`).join('')}
+            </div>
+          </div>
+
+          <!-- Section 3: Harness Native Tools & Governance Sections -->
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border, rgba(255,255,255,0.08)); border-radius: 8px; padding: 12px;">
+            <div style="font-weight: 600; margin-bottom: 6px; font-size: 12px; display: flex; justify-content: space-between; align-items: center;">
+              <span>\${t('sectionNativeTitle')}</span>
+              <span style="font-size: 10px; color: #34d399; font-weight: 600;">~5.5k tokens</span>
+            </div>
+            <div style="font-size: 10px; color: var(--muted-foreground, #aaa); margin-bottom: 8px; line-height: 1.4;">
+              \${t('nativeSummaryText', { toolsCount: nativeTools.length, toolsList: nativeTools.slice(0, 4).join(', ') + '...', sectionsCount: promptSections.length })}
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 5px;">
+              \${promptSections.map(sec => \`
+                <span style="font-size: 9.5px; padding: 1px 5px; border-radius: 3px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.25); color: #6ee7b7;">
+                  &lt;\${sec}&gt;
+                </span>
+              \`).join('')}
+            </div>
+          </div>
+
+          <!-- Section 4: MCP Servers -->
+          \${mcps.length > 0 ? \`
+            <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border, rgba(255,255,255,0.08)); border-radius: 8px; padding: 12px;">
+              <div style="font-weight: 600; margin-bottom: 6px; font-size: 12px; display: flex; justify-content: space-between; align-items: center;">
+                <span>\${t('sectionMcpsTitle')}</span>
+                <span style="font-size: 10px; color: #f59e0b; font-weight: 600;">\${mcps.length} servers (\${sys.mcpsToolsCount} tools)</span>
+              </div>
+              <div style="font-size: 10px; color: var(--muted-foreground, #aaa); margin-bottom: 8px;">
+                \${t('mcpsSummaryText', { count: mcps.length, toolsCount: sys.mcpsToolsCount })}
+              </div>
+              <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                \${mcps.map(m => \`
+                  <div style="padding: 4px 8px; border-radius: 4px; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.2); font-size: 10.5px; display: flex; align-items: center; gap: 6px;">
+                    <span style="font-weight: 600; color: #fbbf24;">🔌 \${m.name}</span>
+                    <span style="font-size: 9px; opacity: 0.7; color: #fef3c7;">\${m.toolsCount} tools</span>
+                  </div>
+                \`).join('')}
+              </div>
+            </div>
+          \` : ''}
+
+        </div>
+      \`;
 
     } else if (tab === 'costs') {
       const pricing = data.pricing || getModelPricing(data.latestUsage?.model, data.totalTokens);
@@ -1483,7 +1787,8 @@ const widgetJsContent = `(() => {
         </div>
       \`;
     } else if (tab === 'files') {
-      if (data.files.length === 0) {
+      const files = data.files || [];
+      if (files.length === 0) {
         container.innerHTML = \`<div style="text-align:center; padding: 30px; color: var(--muted-foreground, #888);">\${t('noFilesSession')}</div>\`;
         return;
       }
@@ -1495,7 +1800,7 @@ const widgetJsContent = `(() => {
             <span style="text-align: right;">\${t('colFileTokens')}</span>
             <span style="text-align: right;">\${t('colFileReads')}</span>
           </div>
-          \${data.files.map(f => \`
+          \${files.map(f => \`
             <div class="agy-table-row" style="display: grid; grid-template-columns: 2fr 100px 100px 80px; padding: 6px 8px; border-radius: 6px; font-size: 11px; align-items: center; transition: background 0.1s;">
               <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="\${f.path}">
                 <span style="font-weight: 600; color: var(--foreground, #fff);">\${f.name}</span>
@@ -1509,7 +1814,8 @@ const widgetJsContent = `(() => {
         </div>
       \`;
     } else if (tab === 'commands') {
-      if (data.commands.length === 0) {
+      const commands = data.commands || [];
+      if (commands.length === 0) {
         container.innerHTML = \`<div style="text-align:center; padding: 30px; color: var(--muted-foreground, #888);">\${t('noCommandsSession')}</div>\`;
         return;
       }
@@ -1898,4 +2204,4 @@ const widgetJsContent = `(() => {
 `;
 
 fs.writeFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), 'widget.js'), widgetJsContent, 'utf8');
-console.log('✅ widget.js v1.5.0 generated successfully!');
+console.log('✅ widget.js v1.6.0 generated successfully!');

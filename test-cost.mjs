@@ -102,7 +102,7 @@ console.log('  ✓ Test 4 passed: High precision USD formatting.');
 
 // Test 5: Syntax and structural integrity of widget.js
 const widgetSrc = fs.readFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), 'widget.js'), 'utf8');
-assert(widgetSrc.includes("VERSION = '1.5.0-i18n-opensource'"), 'widget.js must have VERSION = 1.5.0-i18n-opensource');
+assert(widgetSrc.includes("VERSION = '1.6.0'"), 'widget.js must have VERSION = 1.6.0');
 assert(widgetSrc.includes("agy-popover-cost"), 'widget.js must contain agy-popover-cost');
 assert(widgetSrc.includes("agy-m-cost"), 'widget.js must contain agy-m-cost');
 assert(widgetSrc.includes("agy-tab-btn-costs"), 'widget.js must contain agy-tab-btn-costs');
@@ -116,7 +116,7 @@ assert(monitorSrc.includes('getExpectedWidgetVersion'), 'monitor.mjs must export
 
 const { getDevToolsPortFile, getExpectedWidgetVersion } = await import('./monitor.mjs');
 assert.strictEqual(typeof getDevToolsPortFile(), 'string', 'getDevToolsPortFile() must return a path string');
-assert.strictEqual(getExpectedWidgetVersion(), '1.5.0-i18n-opensource', 'Expected version must be 1.5.0-i18n-opensource');
+assert.strictEqual(getExpectedWidgetVersion(), '1.6.0', 'Expected version must be 1.6.0');
 console.log('  ✓ Test 6 passed: Structural integrity and resolution of monitor.mjs.');
 
 console.log('🎉 All unit tests passed with 100% success!');

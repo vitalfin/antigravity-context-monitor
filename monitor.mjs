@@ -66,7 +66,7 @@ export function getWidgetScript() {
 export function getExpectedWidgetVersion() {
   const script = getWidgetScript();
   const match = script?.match(/const VERSION = ['"]([^'"]+)['"]/);
-  return match ? match[1] : '1.5.0-i18n-opensource';
+  return match ? match[1] : '1.6.0';
 }
 
 /**
@@ -232,6 +232,7 @@ if (isDirectExecution()) {
   console.log('  🛸 v1.3.0:    Portal Popover & Subagent Inspector active');
   console.log('  🛡️ v1.4.0:    Subagent Context Isolation & Compaction Detection active');
   console.log('  🌐 v1.5.0:    i18n (7 Languages: EN, PT, ES, JA, ZH, FR, DE) & Sponsor active');
+  console.log('  🧠 v1.6.0:    System Prompt & Rules Inspector active');
 
   setInterval(runCycle, 4000);
   runCycle();

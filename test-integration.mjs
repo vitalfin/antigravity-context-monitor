@@ -65,17 +65,19 @@ ws.onopen = async () => {
         const popSponsor = document.getElementById('agy-btn-popover-sponsor');
         const currentLocale = window.__agyGetLocale ? window.__agyGetLocale() : null;
         const tabOverviewText = document.getElementById('agy-tab-btn-overview')?.innerText;
+        const tabSystem = document.getElementById('agy-tab-btn-system');
         const modalTitle = document.getElementById('agy-modal-title-text')?.innerText;
-        return { version, hasWidget: !!widget, hasPopover: !!popover, hasModal: !!modal, hasLangSelect: !!langSelect, hasPopLangSelect: !!popLangSelect, hasModalSponsor: !!modalSponsor, modalSponsorHref: modalSponsor?.getAttribute('href'), hasPopSponsor: !!popSponsor, popSponsorHref: popSponsor?.getAttribute('href'), currentLocale, tabOverviewText, modalTitle };
+        return { version, hasWidget: !!widget, hasPopover: !!popover, hasModal: !!modal, hasLangSelect: !!langSelect, hasPopLangSelect: !!popLangSelect, hasModalSponsor: !!modalSponsor, modalSponsorHref: modalSponsor?.getAttribute('href'), hasPopSponsor: !!popSponsor, popSponsorHref: popSponsor?.getAttribute('href'), hasTabSystem: !!tabSystem, currentLocale, tabOverviewText, modalTitle };
       })()`,
       returnByValue: true
     });
     const state = evalResult.result.value;
     console.log('🔍 Elements:', JSON.stringify(state, null, 2));
-    assert.strictEqual(state.version, '1.5.1', 'Version must be 1.5.1');
+    assert.strictEqual(state.version, '1.6.0', 'Version must be 1.6.0');
     assert.strictEqual(state.hasWidget, true, 'Widget must exist');
     assert.strictEqual(state.hasPopover, true, 'Popover must exist');
     assert.strictEqual(state.hasModal, true, 'Modal must exist');
+    assert.strictEqual(state.hasTabSystem, true, 'Rules & System tab button must exist');
     assert.strictEqual(state.hasLangSelect, true, 'Language selector must exist');
     assert.strictEqual(state.hasPopLangSelect, true, 'Popover language selector must exist');
     assert.strictEqual(state.hasModalSponsor, true, 'Modal sponsor button must exist');
@@ -189,6 +191,85 @@ ws.onopen = async () => {
     assert.strictEqual(mRes.subTagAfter, 'none', 'Subagent tag must stay hidden after locale switch');
     assert.notStrictEqual(mRes.tabSubBtnAfter, 'none', 'Subagents tab must remain visible after locale switch');
     console.log('  ✓ Test 5 passed: Locale switch does not trigger subagent mode');
+
+    // Test 6: Rules & System tab navigation and rendering
+    const sysTabTest = await sendCmd('Runtime.evaluate', {
+      expression: `(() => {
+        window.__agySetLocale('en');
+        const mockSys = {
+          cascadeId: 'sys-test',
+          totalTokens: 25000,
+          cachedTokens: 18000,
+          inputTokens: 5000,
+          outputTokens: 2000,
+          cachePct: 78,
+          compactionCount: 0,
+          breakdown: { system: 19500, files: 2500, commands: 1500, dialogue: 1500 },
+          files: [{ name: 'generate-widget.mjs', path: '/workspace/generate-widget.mjs', bytes: 12000, tokensEst: 2500, count: 1 }],
+          commands: [],
+          filesCount: 1,
+          commandsCount: 0,
+          systemDetails: {
+            workspaceDir: '/home/ph/projects/vitalf/code/workspace',
+            rules: [
+              { name: 'AGENTS.md', path: '/home/ph/projects/vitalf/code/workspace/AGENTS.md', scope: 'workspace', status: 'always_on', bytes: 5120, tokensEst: 1352, contentPreview: 'Vitalf Agent Guidelines' },
+              { name: 'workflow-lifecycle.md', path: '/home/ph/projects/vitalf/code/workspace/.agents/rules/workflow-lifecycle.md', scope: 'workspace', status: 'always_on', bytes: 6900, tokensEst: 1822, contentPreview: 'Vitalf Engineering Task Execution Rule' }
+            ],
+            rulesCount: 2,
+            rulesTokensTotal: 3174,
+            skills: [
+              { name: 'the-judge', path: '/home/ph/projects/vitalf/code/workspace/.agents/skills/the-judge', scope: 'workspace' },
+              { name: 'antigravity-guide', path: '/home/ph/.gemini/antigravity/builtin/skills/antigravity_guide', scope: 'builtin' }
+            ],
+            nativeTools: ['run_command', 'view_file', 'replace_file_content'],
+            promptSections: ['identity', 'user_information', 'mcp_servers', 'user_rules']
+          }
+        };
+        if (window.__agyContextCache) window.__agyContextCache.set(mockSys.cascadeId, mockSys);
+
+        const widget = document.getElementById('agy-context-zone-widget');
+        widget.click();
+
+        const select = document.getElementById('agy-session-select');
+        const opt = document.createElement('option');
+        opt.value = mockSys.cascadeId;
+        opt.innerText = 'System Test Session';
+        select.appendChild(opt);
+        select.value = mockSys.cascadeId;
+        select.dispatchEvent(new Event('change'));
+
+        const tabSysBtn = document.getElementById('agy-tab-btn-system');
+        const check = (cond, msg) => { if (!cond) throw new Error(msg); };
+        check(tabSysBtn, 'tabSysBtn must exist');
+        tabSysBtn.click();
+
+        const container = document.getElementById('agy-tab-content');
+        const content = container?.innerHTML || '';
+        const hasSysBanner = content.includes('System Prompt') && content.includes('Rules Architecture');
+        const hasRulesSec = content.includes('Active Workspace') && content.includes('Global Rules');
+        const hasSkillsSec = content.includes('Skills Catalog');
+
+        // Test overview link to system
+        const tabOverviewBtn = document.getElementById('agy-tab-btn-overview');
+        tabOverviewBtn.click();
+        const linkSys = document.getElementById('agy-link-all-system');
+        const hasLinkSys = !!linkSys;
+        if (linkSys) linkSys.click();
+        const activeAfterLink = tabSysBtn.style.color.includes('rgb(34, 197, 94)');
+
+        document.getElementById('agy-modal-close').click();
+        return { hasSysBanner, hasRulesSec, hasSkillsSec, hasLinkSys, activeAfterLink };
+      })()`,
+      returnByValue: true
+    });
+    const sRes = sysTabTest.result.value;
+    console.log('🧠 System & Rules Tab Test:', JSON.stringify(sRes, null, 2));
+    assert.strictEqual(sRes.hasSysBanner, true, 'System banner must render');
+    assert.strictEqual(sRes.hasRulesSec, true, 'Rules section must render');
+    assert.strictEqual(sRes.hasSkillsSec, true, 'Skills section must render');
+    assert.strictEqual(sRes.hasLinkSys, true, 'Overview link to system must exist');
+    assert.strictEqual(sRes.activeAfterLink, true, 'Clicking overview link must activate system tab');
+    console.log('  ✓ Test 6 passed: System & Rules Inspector renders and links accurately');
 
     console.log('\n🎉 ALL UNIFIED CDP TESTS PASSED');
     ws.close();

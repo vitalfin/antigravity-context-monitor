@@ -3,7 +3,7 @@
   const BREADCRUMB_WIDGET_ID = 'agy-breadcrumb-context-widget';
   const MODAL_ID = 'agy-context-inspector-modal';
   const POPOVER_ID = 'agy-zone-popover';
-  const VERSION = '1.5.0-i18n-opensource';
+  const VERSION = '1.6.0';
 
   if (window.__agyWidgetVersion === VERSION && (document.getElementById(WIDGET_ID) || document.getElementById(BREADCRUMB_WIDGET_ID))) {
     return;
@@ -158,7 +158,29 @@
     "tip2Item4": "When completing a milestone or changing topics, start a <strong>New Conversation</strong> with 100% fresh context.",
     "sponsorBtn": "💖 Sponsor",
     "sponsorTooltip": "Support Vitalf open-source tools on GitHub Sponsors",
-    "languageLabel": "Language:"
+    "languageLabel": "Language:",
+    "tabSystem": "🧠 Rules & System ({count})",
+    "btnInspectSystem": "Inspect Rules & System ↗",
+    "systemBannerTitle": "System Prompt & Rules Architecture",
+    "systemBannerDesc": "The System category (~{tokens} tokens) is preloaded by Antigravity on every turn. It is composed of active workspace rules, global guidelines, skills catalogs, native tool schemas, and platform instructions.",
+    "sectionRulesTitle": "Active Workspace & Global Rules",
+    "sectionSkillsTitle": "Skills Catalog (Progressive Disclosure)",
+    "sectionNativeTitle": "Harness Native Tools & System Sections",
+    "sectionMcpsTitle": "Connected MCP Servers & Tools",
+    "colRuleName": "RULE FILE",
+    "colRuleScope": "SCOPE",
+    "colRuleTokens": "EST. TOKENS",
+    "colRuleStatus": "TYPE / STATUS",
+    "ruleAlwaysOn": "Always-On (Injected)",
+    "ruleConditional": "Conditional (On-Demand)",
+    "noRulesFound": "No explicit rule files found for this workspace.",
+    "previewBtn": "Preview",
+    "scopeWorkspace": "Workspace",
+    "scopeGlobal": "Global",
+    "scopeBuiltin": "Built-in",
+    "skillsSummaryText": "{count} skills registered ({wsCount} workspace, {globCount} global/plugin, {builtCount} built-in). Their full descriptions are injected into the system prompt for progressive disclosure.",
+    "nativeSummaryText": "{toolsCount} native tools declared ({toolsList}) and {sectionsCount} prompt governance sections active.",
+    "mcpsSummaryText": "{count} MCP server(s) providing {toolsCount} external tools to the system prompt manifest."
   },
   "pt": {
     "zoneSmartTag": "SMART ZONE ✓",
@@ -284,7 +306,29 @@
     "tip2Item4": "Ao concluir um objetivo ou mudar de assunto, inicie uma <strong>Nova Conversa</strong> com contexto 100% renovado.",
     "sponsorBtn": "💖 Apoiar",
     "sponsorTooltip": "Apoie as ferramentas open-source da Vitalf no GitHub Sponsors",
-    "languageLabel": "Idioma:"
+    "languageLabel": "Idioma:",
+    "tabSystem": "🧠 Regras & Sistema ({count})",
+    "btnInspectSystem": "Inspecionar Regras & Sistema ↗",
+    "systemBannerTitle": "Arquitetura do System Prompt & Regras",
+    "systemBannerDesc": "A categoria System (~{tokens} tokens) é pré-carregada pelo Antigravity a cada turno. Ela é composta por regras de workspace ativas, diretrizes globais, catálogo de skills, schemas de ferramentas nativas e instruções da plataforma.",
+    "sectionRulesTitle": "Regras Ativas de Workspace & Globais",
+    "sectionSkillsTitle": "Catálogo de Skills (Progressive Disclosure)",
+    "sectionNativeTitle": "Ferramentas Nativas do Harness & Seções do Sistema",
+    "sectionMcpsTitle": "Servidores MCP & Ferramentas Conectadas",
+    "colRuleName": "ARQUIVO DE REGRA",
+    "colRuleScope": "ESCOPO",
+    "colRuleTokens": "TOKENS EST.",
+    "colRuleStatus": "TIPO / STATUS",
+    "ruleAlwaysOn": "Sempre Ativa (Injetada)",
+    "ruleConditional": "Condicional (Sob Demanda)",
+    "noRulesFound": "Nenhum arquivo de regra explícito encontrado para este workspace.",
+    "previewBtn": "Visualizar",
+    "scopeWorkspace": "Workspace",
+    "scopeGlobal": "Global",
+    "scopeBuiltin": "Embutida",
+    "skillsSummaryText": "{count} skills registradas ({wsCount} do workspace, {globCount} globais/plugins, {builtCount} nativas). Suas descrições completas são injetadas no prompt de sistema para progressive disclosure.",
+    "nativeSummaryText": "{toolsCount} ferramentas nativas declaradas ({toolsList}) e {sectionsCount} seções de governança do prompt ativas.",
+    "mcpsSummaryText": "{count} servidor(es) MCP fornecendo {toolsCount} ferramentas externas ao manifesto do system prompt."
   },
   "es": {
     "zoneSmartTag": "ZONA INTELIGENTE ✓",
@@ -410,7 +454,29 @@
     "tip2Item4": "Al finalizar un objetivo o cambiar de tema, inicia una <strong>Nueva Conversación</strong> con contexto 100% renovado.",
     "sponsorBtn": "💖 Patrocinar",
     "sponsorTooltip": "Apoya las herramientas de código abierto de Vitalf en GitHub Sponsors",
-    "languageLabel": "Idioma:"
+    "languageLabel": "Idioma:",
+    "tabSystem": "🧠 Reglas y Sistema ({count})",
+    "btnInspectSystem": "Inspeccionar Reglas y Sistema ↗",
+    "systemBannerTitle": "Arquitectura del System Prompt y Reglas",
+    "systemBannerDesc": "La categoría System (~{tokens} tokens) se precarga en cada turno de Antigravity. Está compuesta por reglas activas del espacio de trabajo, directrices globales, catálogos de skills, esquemas de herramientas nativas e instrucciones de la plataforma.",
+    "sectionRulesTitle": "Reglas Activas del Espacio de Trabajo y Globales",
+    "sectionSkillsTitle": "Catálogo de Skills (Divulgación Progresiva)",
+    "sectionNativeTitle": "Herramientas Nativas del Harness y Secciones del Sistema",
+    "sectionMcpsTitle": "Servidores MCP y Herramientas Conectadas",
+    "colRuleName": "ARCHIVO DE REGLA",
+    "colRuleScope": "ÁMBITO",
+    "colRuleTokens": "TOKENS EST.",
+    "colRuleStatus": "TIPO / ESTADO",
+    "ruleAlwaysOn": "Siempre Activa (Inyectada)",
+    "ruleConditional": "Condicional (Bajo Demanda)",
+    "noRulesFound": "No se encontraron archivos de reglas explícitos para este espacio de trabajo.",
+    "previewBtn": "Vista Previa",
+    "scopeWorkspace": "Espacio de Trabajo",
+    "scopeGlobal": "Global",
+    "scopeBuiltin": "Incorporada",
+    "skillsSummaryText": "{count} skills registradas ({wsCount} del espacio de trabajo, {globCount} globales/plugins, {builtCount} nativas). Sus descripciones completas se inyectan en el prompt de sistema para divulgación progresiva.",
+    "nativeSummaryText": "{toolsCount} herramientas nativas declaradas ({toolsList}) y {sectionsCount} secciones de gobernanza del prompt activas.",
+    "mcpsSummaryText": "{count} servidor(es) MCP que proporcionan {toolsCount} herramientas externas al manifiesto del system prompt."
   },
   "ja": {
     "zoneSmartTag": "スマートゾーン ✓",
@@ -536,7 +602,29 @@
     "tip2Item4": "目標が完了したり話題を切り替える際は、<strong>新しい会話</strong>を開始してコンテキストを100%リフレッシュしてください。",
     "sponsorBtn": "💖 スポンサー",
     "sponsorTooltip": "GitHub SponsorsでVitalfのオープンソース開発を支援",
-    "languageLabel": "言語:"
+    "languageLabel": "言語:",
+    "tabSystem": "🧠 ルール＆システム ({count})",
+    "btnInspectSystem": "ルール＆システムを検査 ↗",
+    "systemBannerTitle": "システムプロンプトとルールのアーキテクチャ",
+    "systemBannerDesc": "Systemカテゴリ（~{tokens}トークン）は、Antigravityによって毎ターン事前に読み込まれます。ワークスペースルール、グローバルルール、スキルカタログ、ネイティブツールのスキーマ、プラットフォーム指示で構成されます。",
+    "sectionRulesTitle": "アクティブなワークスペースおよびグローバルルール",
+    "sectionSkillsTitle": "スキルカタログ（プログレッシブ・ディスクロージャー）",
+    "sectionNativeTitle": "ハーネスネイティブツールとシステムセクション",
+    "sectionMcpsTitle": "接続中のMCPサーバーとツール",
+    "colRuleName": "ルールファイル",
+    "colRuleScope": "スコープ",
+    "colRuleTokens": "推定トークン",
+    "colRuleStatus": "タイプ / 状態",
+    "ruleAlwaysOn": "常時有効（注入済み）",
+    "ruleConditional": "条件付き（オンデマンド）",
+    "noRulesFound": "このワークスペースの明示的なルールファイルが見つかりません。",
+    "previewBtn": "プレビュー",
+    "scopeWorkspace": "ワークスペース",
+    "scopeGlobal": "グローバル",
+    "scopeBuiltin": "組み込み",
+    "skillsSummaryText": "{count}個のスキルが登録されています（ワークスペース: {wsCount}、グローバル/プラグイン: {globCount}、組み込み: {builtCount}）。プログレッシブ・ディスクロージャーのために完全な説明がシステムプロンプトに注入されます。",
+    "nativeSummaryText": "{toolsCount}個のネイティブツールが宣言され（{toolsList}）、{sectionsCount}個のプロンプトガバナンスセクションがアクティブです。",
+    "mcpsSummaryText": "{count}個のMCPサーバーが{toolsCount}個の外部ツールをシステムプロンプトマニフェストに提供しています。"
   },
   "zh": {
     "zoneSmartTag": "智能区间 ✓",
@@ -662,7 +750,29 @@
     "tip2Item4": "完成阶段目标或切换话题时，开启<strong>新对话</strong>以获得 100% 全新的上下文。",
     "sponsorBtn": "💖 赞助项目",
     "sponsorTooltip": "在 GitHub Sponsors 上支持 Vitalf 开源工具开发",
-    "languageLabel": "语言:"
+    "languageLabel": "语言:",
+    "tabSystem": "🧠 规则与系统 ({count})",
+    "btnInspectSystem": "检查规则与系统 ↗",
+    "systemBannerTitle": "系统提示词与规则架构",
+    "systemBannerDesc": "System 类别（~{tokens} tokens）在每个回合均由 Antigravity 预先加载。它由活跃工作区规则、全局规范、技能目录、原生工具结构定义和平台指令组成。",
+    "sectionRulesTitle": "活跃工作区与全局规则",
+    "sectionSkillsTitle": "技能目录（渐进式披露）",
+    "sectionNativeTitle": "原生工具与系统指令章节",
+    "sectionMcpsTitle": "已连接的 MCP 服务器与工具",
+    "colRuleName": "规则文件",
+    "colRuleScope": "作用域",
+    "colRuleTokens": "预估 TOKENS",
+    "colRuleStatus": "类型 / 状态",
+    "ruleAlwaysOn": "始终启用（已注入）",
+    "ruleConditional": "条件触发（按需加载）",
+    "noRulesFound": "未找到此工作区的明确规则文件。",
+    "previewBtn": "预览",
+    "scopeWorkspace": "工作区",
+    "scopeGlobal": "全局",
+    "scopeBuiltin": "内置",
+    "skillsSummaryText": "已注册 {count} 项技能（工作区 {wsCount} 项，全局/插件 {globCount} 项，内置 {builtCount} 项）。完整描述均已注入系统提示词以供渐进式发现。",
+    "nativeSummaryText": "已声明 {toolsCount} 个原生工具（{toolsList}），激活了 {sectionsCount} 个提示词治理章节。",
+    "mcpsSummaryText": "{count} 个 MCP 服务器为系统提示词清单提供了 {toolsCount} 个外部工具。"
   },
   "fr": {
     "zoneSmartTag": "ZONE INTELLIGENTE ✓",
@@ -788,7 +898,29 @@
     "tip2Item4": "Lorsque vous terminez un objectif ou changez de sujet, démarrez une <strong>Nouvelle Conversation</strong> avec un contexte 100% neuf.",
     "sponsorBtn": "💖 Sponsoriser",
     "sponsorTooltip": "Soutenez les outils open-source de Vitalf sur GitHub Sponsors",
-    "languageLabel": "Langue :"
+    "languageLabel": "Langue :",
+    "tabSystem": "🧠 Règles & Système ({count})",
+    "btnInspectSystem": "Inspecter Règles & Système ↗",
+    "systemBannerTitle": "Architecture du System Prompt & Règles",
+    "systemBannerDesc": "La catégorie System (~{tokens} tokens) est préchargée à chaque tour par Antigravity. Elle comprend les règles d'espace de travail actives, les directives globales, les catalogues de skills, les schémas d'outils natifs et les instructions de plateforme.",
+    "sectionRulesTitle": "Règles Actives d'Espace de Travail & Globales",
+    "sectionSkillsTitle": "Catalogue de Skills (Divulgation Progressive)",
+    "sectionNativeTitle": "Outils Natifs du Harness & Sections Système",
+    "sectionMcpsTitle": "Serveurs MCP & Outils Connectés",
+    "colRuleName": "FICHIER DE RÈGLE",
+    "colRuleScope": "PORTÉE",
+    "colRuleTokens": "TOKENS EST.",
+    "colRuleStatus": "TYPE / STATUT",
+    "ruleAlwaysOn": "Toujours Active (Injectée)",
+    "ruleConditional": "Conditionnelle (À la Demande)",
+    "noRulesFound": "Aucun fichier de règle explicite trouvé pour cet espace de travail.",
+    "previewBtn": "Aperçu",
+    "scopeWorkspace": "Espace de Travail",
+    "scopeGlobal": "Global",
+    "scopeBuiltin": "Intégré",
+    "skillsSummaryText": "{count} skills enregistrées ({wsCount} d'espace de travail, {globCount} globales/plugins, {builtCount} intégrées). Leurs descriptions complètes sont injectées dans le system prompt pour la divulgation progressive.",
+    "nativeSummaryText": "{toolsCount} outils natifs déclarés ({toolsList}) et {sectionsCount} sections de gouvernance du prompt actives.",
+    "mcpsSummaryText": "{count} serveur(s) MCP fournissant {toolsCount} outils externes au manifeste du system prompt."
   },
   "de": {
     "zoneSmartTag": "SMART-ZONE ✓",
@@ -914,7 +1046,29 @@
     "tip2Item4": "Starten Sie nach Erreichen eines Meilensteins oder bei Themenwechseln eine <strong>Neue Unterhaltung</strong> mit 100% frischem Kontext.",
     "sponsorBtn": "💖 Sponsern",
     "sponsorTooltip": "Unterstützen Sie Vitalf Open-Source-Tools auf GitHub Sponsors",
-    "languageLabel": "Sprache:"
+    "languageLabel": "Sprache:",
+    "tabSystem": "🧠 Regeln & System ({count})",
+    "btnInspectSystem": "Regeln & System prüfen ↗",
+    "systemBannerTitle": "System-Prompt- & Regelarchitektur",
+    "systemBannerDesc": "Die System-Kategorie (~{tokens} Tokens) wird bei jedem Turn von Antigravity vorab geladen. Sie besteht aus aktiven Workspace-Regeln, globalen Richtlinien, Skill-Katalogen, nativen Tool-Schemas und Plattform-Instruktionen.",
+    "sectionRulesTitle": "Aktive Workspace- & globale Regeln",
+    "sectionSkillsTitle": "Skill-Katalog (Progressive Disclosure)",
+    "sectionNativeTitle": "Native Harness-Tools & System-Abschnitte",
+    "sectionMcpsTitle": "Verbundene MCP-Server & Tools",
+    "colRuleName": "REGELDATEI",
+    "colRuleScope": "GELTUNGSBEREICH",
+    "colRuleTokens": "GESCH. TOKENS",
+    "colRuleStatus": "TYP / STATUS",
+    "ruleAlwaysOn": "Immer Aktiv (Injiziert)",
+    "ruleConditional": "Bedingt (Bei Bedarf)",
+    "noRulesFound": "Keine expliziten Regeldateien für diesen Workspace gefunden.",
+    "previewBtn": "Vorschau",
+    "scopeWorkspace": "Workspace",
+    "scopeGlobal": "Global",
+    "scopeBuiltin": "Integriert",
+    "skillsSummaryText": "{count} Skills registriert ({wsCount} Workspace, {globCount} global/Plugin, {builtCount} integriert). Ihre vollständigen Beschreibungen werden für Progressive Disclosure in den System-Prompt eingefügt.",
+    "nativeSummaryText": "{toolsCount} native Tools deklariert ({toolsList}) und {sectionsCount} Prompt-Governance-Abschnitte aktiv.",
+    "mcpsSummaryText": "{count} MCP-Server stellen {toolsCount} externe Tools für das System-Prompt-Manifest bereit."
   }
 };
 
@@ -1224,6 +1378,25 @@
   window.__agySetLocale = setLocale;
   window.__agyGetLocale = () => currentLocale;
 
+
+  async function callLSS(endpoint, body = {}) {
+    try {
+      const token = window.__APP_CONFIG__?.csrfToken;
+      const res = await fetch('/exa.language_server_pb.LanguageServerService/' + endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-codeium-csrf-token': token
+        },
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch (e) {
+      return null;
+    }
+  }
+
   async function fetchContextDetails(cascadeId) {
     if (!cascadeId) return null;
     try {
@@ -1345,6 +1518,143 @@
       // Base system prompt tokens
       const systemTokensEst = firstUsage ? Math.max(5000, Number(firstUsage.inputTokens || 0) - totalUserTokens) : 19000;
 
+
+      // Discover workspace directory, active rules, skills, and MCPs
+      let workspaceDir = null;
+      for (const s of steps) {
+        if (s.metadata?.toolCall?.argumentsJson) {
+          try {
+            const args = JSON.parse(s.metadata.toolCall.argumentsJson);
+            const p = args.Cwd || args.AbsolutePath || args.TargetFile;
+            if (p && typeof p === 'string' && p.startsWith('/')) {
+              const wsIdx = p.indexOf('/workspace');
+              if (wsIdx !== -1) {
+                workspaceDir = p.slice(0, wsIdx + '/workspace'.length);
+                break;
+              }
+            }
+          } catch (e) {}
+        }
+      }
+      if (!workspaceDir) {
+        workspaceDir = '/home/ph/projects/vitalf/code/workspace';
+      }
+
+      const step0 = steps[0];
+      const promptSections = step0?.userInput?.userConfig?.plannerConfig?.declarativeMixinConfig?.promptSections?.map(s => s.builtinName) || [];
+      const nativeTools = step0?.userInput?.userConfig?.plannerConfig?.declarativeMixinConfig?.tools?.map(t => t.name) || [];
+
+      // 1. Fetch Global Rules
+      const rulesList = [];
+      const allRulesRes = await callLSS('GetAllRules');
+      if (allRulesRes?.memories) {
+        for (const m of allRulesRes.memories) {
+          const content = m.textMemory?.content || '';
+          const bytes = content.length;
+          rulesList.push({
+            name: m.memoryId || 'user_global',
+            path: m.absolutePath || m.discoveredIn || '~/.gemini/GEMINI.md',
+            scope: 'global',
+            status: 'always_on',
+            bytes: bytes,
+            tokensEst: toTokens(bytes),
+            contentPreview: content.slice(0, 300)
+          });
+        }
+      }
+
+      // 2. Fetch Workspace Rules (AGENTS.md, GEMINI.md, and .agents/rules/*.md)
+      if (workspaceDir) {
+        const checkFiles = ['AGENTS.md', 'GEMINI.md'];
+        for (const fn of checkFiles) {
+          const filePath = workspaceDir + '/' + fn;
+          const rf = await callLSS('ReadFile', { uri: 'file://' + filePath });
+          if (rf?.content) {
+            try {
+              const raw = atob(rf.content);
+              rulesList.push({
+                name: fn,
+                path: filePath,
+                scope: 'workspace',
+                status: 'always_on',
+                bytes: raw.length,
+                tokensEst: toTokens(raw.length),
+                contentPreview: raw.slice(0, 350)
+              });
+            } catch (e) {}
+          }
+        }
+
+        const dirRes = await callLSS('ReadDir', { uri: 'file://' + workspaceDir + '/.agents/rules' });
+        if (dirRes?.entries) {
+          for (const entry of dirRes.entries) {
+            const p = entry.uri.replace('file://', '');
+            const fn = p.split('/').pop();
+            const rf = await callLSS('ReadFile', { uri: entry.uri });
+            if (rf?.content) {
+              try {
+                const raw = atob(rf.content);
+                const isConditional = raw.includes('trigger: model_decision') || fn.includes('how-to-run-tests');
+                rulesList.push({
+                  name: fn,
+                  path: p,
+                  scope: 'workspace',
+                  status: isConditional ? 'conditional' : 'always_on',
+                  bytes: raw.length,
+                  tokensEst: toTokens(raw.length),
+                  contentPreview: raw.slice(0, 350)
+                });
+              } catch (e) {}
+            }
+          }
+        }
+      }
+
+      // 3. Fetch Skills & Plugins
+      const custRes = await callLSS('GetCustomizationStates');
+      const skillsList = [];
+      if (custRes?.states) {
+        for (const st of custRes.states) {
+          if (st.type === 'REFRESH_CUSTOMIZATION_TYPE_SKILL' && st.status === 'STATUS_ENABLED') {
+            skillsList.push({
+              name: st.name,
+              path: st.path,
+              scope: st.scope === 'SCOPE_WORKSPACE' ? 'workspace' : (st.scope === 'SCOPE_BUILTIN' ? 'builtin' : 'global'),
+              pluginName: st.pluginName
+            });
+          }
+        }
+      }
+
+      // 4. Fetch MCP Servers
+      const mcpRes = await callLSS('GetMcpServerStates');
+      const mcpsList = [];
+      if (mcpRes?.states) {
+        for (const [k, v] of Object.entries(mcpRes.states)) {
+          mcpsList.push({
+            name: k,
+            toolsCount: v.tools?.length || 0,
+            status: v.status || 'CONNECTED'
+          });
+        }
+      }
+
+      const totalRulesTokens = rulesList.filter(r => r.status === 'always_on').reduce((acc, r) => acc + r.tokensEst, 0);
+
+      const systemDetails = {
+        workspaceDir,
+        rules: rulesList,
+        rulesCount: rulesList.length,
+        rulesTokensTotal: totalRulesTokens,
+        skills: skillsList,
+        skillsCount: skillsList.length,
+        mcps: mcpsList,
+        mcpsCount: mcpsList.length,
+        mcpsToolsCount: mcpsList.reduce((acc, m) => acc + m.toolsCount, 0),
+        promptSections,
+        nativeTools
+      };
+
       const pricing = getModelPricing(latestUsage?.model, totalTokens);
       const costs = calculateCosts(inputTokens, cachedTokens, outputTokens, pricing);
 
@@ -1369,7 +1679,8 @@
         commands: commandsSorted,
         filesCount: filesList.length,
         commandsCount: commandsSorted.length,
-        latestUsage
+        latestUsage,
+        systemDetails
       };
 
       contextCache.set(cascadeId, result);
@@ -1823,6 +2134,7 @@
       <div style="display: flex; padding: 0 18px; border-bottom: 1px solid var(--border, rgba(255,255,255,0.1)); background: color-mix(in srgb, var(--foreground, #fff) 1.5%, transparent); gap: 16px;">
         <button id="agy-tab-btn-overview" type="button" class="agy-tab-btn" data-tab="overview" style="background: transparent; border: none; border-bottom: 2px solid #22c55e; color: #22c55e; font-size: 11.5px; font-weight: 600; padding: 8px 2px; cursor: pointer;">Overview</button>
         <button id="agy-tab-btn-costs" type="button" class="agy-tab-btn" data-tab="costs" style="background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--muted-foreground, #999); font-size: 11.5px; font-weight: 600; padding: 8px 2px; cursor: pointer;">💳 Costs & Credits</button>
+        <button id="agy-tab-btn-system" type="button" class="agy-tab-btn" data-tab="system" style="background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--muted-foreground, #999); font-size: 11.5px; font-weight: 600; padding: 8px 2px; cursor: pointer;">🧠 Rules & System (<span id="agy-tab-count-rules">0</span>)</button>
         <button id="agy-tab-btn-files" type="button" class="agy-tab-btn" data-tab="files" style="background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--muted-foreground, #999); font-size: 11.5px; font-weight: 600; padding: 8px 2px; cursor: pointer;">Files (<span id="agy-tab-count-files">0</span>)</button>
         <button id="agy-tab-btn-commands" type="button" class="agy-tab-btn" data-tab="commands" style="background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--muted-foreground, #999); font-size: 11.5px; font-weight: 600; padding: 8px 2px; cursor: pointer;">Commands (<span id="agy-tab-count-commands">0</span>)</button>
         <button id="agy-tab-btn-subagents" type="button" class="agy-tab-btn" data-tab="subagents" style="background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--muted-foreground, #999); font-size: 11.5px; font-weight: 600; padding: 8px 2px; cursor: pointer;">Subagents (<span id="agy-tab-count-subagents">0</span>)</button>
@@ -1892,6 +2204,7 @@
 
     if (el('agy-tab-btn-overview')) el('agy-tab-btn-overview').innerText = t('tabOverview');
     if (el('agy-tab-btn-costs')) el('agy-tab-btn-costs').innerText = t('tabCosts');
+    if (el('agy-tab-btn-system')) el('agy-tab-btn-system').innerHTML = t('tabSystem', { count: currentContextData?.systemDetails?.rules?.length || 0 });
     if (el('agy-tab-btn-tips')) el('agy-tab-btn-tips').innerText = t('tabTips');
 
     const popLangSelect = el('agy-popover-lang-select');
@@ -2033,6 +2346,7 @@
 
     const tabFilesBtn = document.getElementById('agy-tab-btn-files');
     const tabCmdsBtn = document.getElementById('agy-tab-btn-commands');
+    const tabSystemBtn = document.getElementById('agy-tab-btn-system');
 
     if (!data || data.totalTokens === 0) {
       if (mTag) {
@@ -2059,6 +2373,7 @@
 
       if (tabFilesBtn) tabFilesBtn.innerHTML = t('tabFiles', { count: 0 });
       if (tabCmdsBtn) tabCmdsBtn.innerHTML = t('tabCommands', { count: 0 });
+      if (tabSystemBtn) tabSystemBtn.innerHTML = t('tabSystem', { count: 0 });
 
       renderModalTab(activeTab, null);
       return;
@@ -2089,20 +2404,21 @@
       mCostSub.title = t('cacheSavingsTooltip', { usd: formatUSD(costs.savedCost) });
     }
 
-    if (mFiles) mFiles.innerText = t('filesCountUnit', { count: data.filesCount });
-    if (mFilesTokens) mFilesTokens.innerText = t('estTokens', { tokens: formatTokens(data.breakdown.files) });
+    const breakdown = data.breakdown || { system: 0, files: 0, commands: 0, dialogue: 0 };
+    if (mFiles) mFiles.innerText = t('filesCountUnit', { count: data.filesCount || 0 });
+    if (mFilesTokens) mFilesTokens.innerText = t('estTokens', { tokens: formatTokens(breakdown.files) });
 
-    if (mCmds) mCmds.innerText = t('cmdsCountUnit', { count: data.commandsCount });
-    if (mCmdsTokens) mCmdsTokens.innerText = t('estTokens', { tokens: formatTokens(data.breakdown.commands) });
+    if (mCmds) mCmds.innerText = t('cmdsCountUnit', { count: data.commandsCount || 0 });
+    if (mCmdsTokens) mCmdsTokens.innerText = t('estTokens', { tokens: formatTokens(breakdown.commands) });
 
     if (mRawRatio) mRawRatio.innerText = t('rawRatioText', { tokens: formatTokens(totalTokens), pct: rawPct });
 
     // Load category segment bar normalization
-    const rawSum = (data.breakdown.system || 0) + (data.breakdown.files || 0) + (data.breakdown.commands || 0) + (data.breakdown.dialogue || 0);
+    const rawSum = (breakdown.system || 0) + (breakdown.files || 0) + (breakdown.commands || 0) + (breakdown.dialogue || 0);
     const normBase = Math.max(totalTokens, rawSum, 1);
-    const bSysPct = Math.round(((data.breakdown.system || 0) / normBase) * 100);
-    const bFilesPct = Math.round(((data.breakdown.files || 0) / normBase) * 100);
-    const bCmdsPct = Math.round(((data.breakdown.commands || 0) / normBase) * 100);
+    const bSysPct = Math.round(((breakdown.system || 0) / normBase) * 100);
+    const bFilesPct = Math.round(((breakdown.files || 0) / normBase) * 100);
+    const bCmdsPct = Math.round(((breakdown.commands || 0) / normBase) * 100);
     const bDiagPct = Math.max(0, 100 - (bSysPct + bFilesPct + bCmdsPct));
 
     if (bSys) bSys.style.width = bSysPct + '%';
@@ -2112,6 +2428,7 @@
 
     if (tabFilesBtn) tabFilesBtn.innerHTML = t('tabFiles', { count: data.filesCount });
     if (tabCmdsBtn) tabCmdsBtn.innerHTML = t('tabCommands', { count: data.commandsCount });
+    if (tabSystemBtn) tabSystemBtn.innerHTML = t('tabSystem', { count: data.systemDetails?.rules?.length || 0 });
 
     renderModalTab(activeTab, data);
   }
@@ -2210,20 +2527,23 @@
               <span style="color: var(--muted-foreground, #999); font-weight: 400;">${t('totalActiveTokens', { tokens: formatTokens(data.totalTokens) })}</span>
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-              <div style="padding: 8px; background: rgba(168, 85, 247, 0.08); border-radius: 6px; border-left: 3px solid #a855f7;">
-                <div style="font-weight: 600; color: #c084fc;">${t('cardSystemTitle', { tokens: formatTokens(data.breakdown.system) })}</div>
-                <div style="font-size: 10px; color: var(--muted-foreground, #aaa); margin-top: 2px;">${t('cardSystemDesc')}</div>
+              <div style="padding: 8px; background: rgba(168, 85, 247, 0.08); border-radius: 6px; border-left: 3px solid #a855f7; display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                  <div style="font-weight: 600; color: #c084fc;">${t('cardSystemTitle', { tokens: formatTokens(data.breakdown?.system || 0) })}</div>
+                  <div style="font-size: 10px; color: var(--muted-foreground, #aaa); margin-top: 2px;">${t('cardSystemDesc')}</div>
+                </div>
+                <button id="agy-link-all-system" type="button" style="align-self: flex-start; margin-top: 6px; background: none; border: none; color: #c084fc; font-size: 10px; cursor: pointer; text-decoration: underline; padding: 0;">${t('btnInspectSystem')}</button>
               </div>
               <div style="padding: 8px; background: rgba(59, 130, 246, 0.08); border-radius: 6px; border-left: 3px solid #3b82f6;">
-                <div style="font-weight: 600; color: #60a5fa;">${t('cardFilesTitle', { tokens: formatTokens(data.breakdown.files) })}</div>
-                <div style="font-size: 10px; color: var(--muted-foreground, #aaa); margin-top: 2px;">${t('cardFilesDesc', { count: data.filesCount })}</div>
+                <div style="font-weight: 600; color: #60a5fa;">${t('cardFilesTitle', { tokens: formatTokens(data.breakdown?.files || 0) })}</div>
+                <div style="font-size: 10px; color: var(--muted-foreground, #aaa); margin-top: 2px;">${t('cardFilesDesc', { count: data.filesCount || 0 })}</div>
               </div>
               <div style="padding: 8px; background: rgba(249, 115, 22, 0.08); border-radius: 6px; border-left: 3px solid #f97316;">
-                <div style="font-weight: 600; color: #fb923c;">${t('cardCmdsTitle', { tokens: formatTokens(data.breakdown.commands) })}</div>
-                <div style="font-size: 10px; color: var(--muted-foreground, #aaa); margin-top: 2px;">${t('cardCmdsDesc', { count: data.commandsCount })}</div>
+                <div style="font-weight: 600; color: #fb923c;">${t('cardCmdsTitle', { tokens: formatTokens(data.breakdown?.commands || 0) })}</div>
+                <div style="font-size: 10px; color: var(--muted-foreground, #aaa); margin-top: 2px;">${t('cardCmdsDesc', { count: data.commandsCount || 0 })}</div>
               </div>
               <div style="padding: 8px; background: rgba(16, 185, 129, 0.08); border-radius: 6px; border-left: 3px solid #10b981;">
-                <div style="font-weight: 600; color: #34d399;">${t('cardDialogueTitle', { tokens: formatTokens(data.breakdown.dialogue) })}</div>
+                <div style="font-weight: 600; color: #34d399;">${t('cardDialogueTitle', { tokens: formatTokens(data.breakdown?.dialogue || 0) })}</div>
                 <div style="font-size: 10px; color: var(--muted-foreground, #aaa); margin-top: 2px;">${t('cardDialogueDesc')}</div>
               </div>
             </div>
@@ -2233,10 +2553,10 @@
           <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border, rgba(255,255,255,0.08)); border-radius: 8px; padding: 12px;">
             <div style="font-weight: 600; margin-bottom: 6px; font-size: 12px; display: flex; justify-content: space-between;">
               <span>${t('topConsumersTitle')}</span>
-              <button id="agy-link-all-files" type="button" style="background: none; border: none; color: #38bdf8; font-size: 10.5px; cursor: pointer; text-decoration: underline;">${t('viewAllBtn', { count: data.filesCount })}</button>
+              <button id="agy-link-all-files" type="button" style="background: none; border: none; color: #38bdf8; font-size: 10.5px; cursor: pointer; text-decoration: underline;">${t('viewAllBtn', { count: data.filesCount || 0 })}</button>
             </div>
             <div style="display: flex; flex-direction: column; gap: 4px;">
-              ${data.files.slice(0, 5).map((f, idx) => `
+              ${(data.files || []).slice(0, 5).map((f, idx) => `
                 <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 6px; background: rgba(255,255,255,0.02); border-radius: 4px; font-size: 11px;">
                   <div style="display: flex; align-items: center; gap: 6px; overflow: hidden;">
                     <span style="opacity: 0.6; font-size: 10px;">#${idx + 1}</span>
@@ -2249,7 +2569,7 @@
                   </div>
                 </div>
               `).join('')}
-              ${data.files.length === 0 ? '<div style="color: var(--muted-foreground, #888); font-size: 11px; text-align: center; padding: 10px;">' + t('noFilesYet') + '</div>' : ''}
+              ${(!data.files || data.files.length === 0) ? '<div style="color: var(--muted-foreground, #888); font-size: 11px; text-align: center; padding: 10px;">' + t('noFilesYet') + '</div>' : ''}
             </div>
           </div>
 
@@ -2262,10 +2582,148 @@
         renderModalWithData(currentContextData, t('scopeMainConversation'));
       });
 
+      container.querySelector('#agy-link-all-system')?.addEventListener('click', () => {
+        const btn = document.querySelector('.agy-tab-btn[data-tab="system"]');
+        if (btn) btn.click();
+      });
+
       container.querySelector('#agy-link-all-files')?.addEventListener('click', () => {
         const btn = document.querySelector('.agy-tab-btn[data-tab="files"]');
         if (btn) btn.click();
       });
+
+    } else if (tab === 'system') {
+      const sys = data.systemDetails || { rules: [], skills: [], mcps: [], promptSections: [], nativeTools: [] };
+      const rules = sys.rules || [];
+      const skills = sys.skills || [];
+      const mcps = sys.mcps || [];
+      const nativeTools = sys.nativeTools || [];
+      const promptSections = sys.promptSections || [];
+      const wsSkillsCount = skills.filter(s => s.scope === 'workspace').length;
+      const globSkillsCount = skills.filter(s => s.scope === 'global').length;
+      const builtSkillsCount = skills.filter(s => s.scope === 'builtin').length;
+
+      container.innerHTML = `
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+
+          <!-- System Architecture Banner -->
+          <div style="padding: 10px 14px; background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.25); border-radius: 8px; display: flex; align-items: flex-start; gap: 10px;">
+            <span style="font-size: 18px;">🧠</span>
+            <div style="flex: 1;">
+              <div style="font-weight: 600; color: #c084fc; font-size: 12px; display: flex; justify-content: space-between; align-items: center;">
+                <span>${t('systemBannerTitle')}</span>
+                <span style="font-size: 11px; padding: 2px 7px; border-radius: 4px; background: rgba(168, 85, 247, 0.2); color: #d8b4fe;">~${formatTokens(data.breakdown.system)} tokens</span>
+              </div>
+              <div style="font-size: 10.5px; color: var(--muted-foreground, #ccc); margin-top: 3px; line-height: 1.45;">
+                ${t('systemBannerDesc', { tokens: formatTokens(data.breakdown.system) })}
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 1: Active Rules & Context Files -->
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border, rgba(255,255,255,0.08)); border-radius: 8px; padding: 12px;">
+            <div style="font-weight: 600; margin-bottom: 8px; font-size: 12px; display: flex; justify-content: space-between; align-items: center;">
+              <span>${t('sectionRulesTitle')}</span>
+              <span style="font-size: 10px; color: #c084fc; font-weight: 600;">~${formatTokens(sys.rulesTokensTotal || 0)} tokens (${rules.length} files)</span>
+            </div>
+            ${rules.length === 0 ? `<div style="text-align: center; padding: 14px; color: var(--muted-foreground, #888); font-size: 11px;">${t('noRulesFound')}</div>` : `
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                <div style="display: grid; grid-template-columns: 2fr 110px 100px 140px; padding: 4px 8px; font-weight: 600; font-size: 10px; color: var(--muted-foreground, #888); border-bottom: 1px solid var(--border, rgba(255,255,255,0.08));">
+                  <span>${t('colRuleName')}</span>
+                  <span>${t('colRuleScope')}</span>
+                  <span style="text-align: right;">${t('colRuleTokens')}</span>
+                  <span style="text-align: right;">${t('colRuleStatus')}</span>
+                </div>
+                ${rules.map((r) => `
+                  <div class="agy-table-row" style="display: flex; flex-direction: column; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); border-radius: 6px; padding: 7px 8px; font-size: 11px; transition: background 0.15s;">
+                    <div style="display: grid; grid-template-columns: 2fr 110px 100px 140px; align-items: center;">
+                      <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${r.path}">
+                        <span style="font-weight: 600; color: #fff;">${r.name}</span>
+                        <span style="font-size: 9.5px; opacity: 0.6; margin-left: 6px;">(${formatBytes(r.bytes)})</span>
+                      </div>
+                      <div>
+                        <span style="font-size: 9.5px; padding: 1px 5px; border-radius: 3px; background: ${r.scope === 'global' ? 'rgba(234, 179, 8, 0.15)' : 'rgba(59, 130, 246, 0.15)'}; color: ${r.scope === 'global' ? '#fde047' : '#93c5fd'};">
+                          ${r.scope === 'global' ? t('scopeGlobal') : t('scopeWorkspace')}
+                        </span>
+                      </div>
+                      <span style="text-align: right; font-weight: 600; color: #c084fc; font-variant-numeric: tabular-nums;">~${formatTokens(r.tokensEst)}</span>
+                      <div style="text-align: right;">
+                        <span style="font-size: 9.5px; padding: 1px 6px; border-radius: 3px; background: ${r.status === 'always_on' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(148, 163, 184, 0.15)'}; color: ${r.status === 'always_on' ? '#4ade80' : '#cbd5e1'}; font-weight: 500;">
+                          ${r.status === 'always_on' ? t('ruleAlwaysOn') : t('ruleConditional')}
+                        </span>
+                      </div>
+                    </div>
+                    ${r.contentPreview ? `
+                      <details style="margin-top: 5px; font-size: 10px;">
+                        <summary style="cursor: pointer; color: #38bdf8; opacity: 0.85; user-select: none;">${t('previewBtn')}</summary>
+                        <pre style="margin: 4px 0 0 0; padding: 6px; background: rgba(0,0,0,0.3); border-radius: 4px; overflow-x: auto; white-space: pre-wrap; font-family: monospace; color: #bbb; max-height: 85px;">${r.contentPreview}...</pre>
+                      </details>
+                    ` : ''}
+                  </div>
+                `).join('')}
+              </div>
+            `}
+          </div>
+
+          <!-- Section 2: Skills Catalog -->
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border, rgba(255,255,255,0.08)); border-radius: 8px; padding: 12px;">
+            <div style="font-weight: 600; margin-bottom: 6px; font-size: 12px; display: flex; justify-content: space-between; align-items: center;">
+              <span>${t('sectionSkillsTitle')}</span>
+              <span style="font-size: 10px; color: #38bdf8; font-weight: 600;">${skills.length} skills (~${formatTokens(skills.length * 120)} tokens)</span>
+            </div>
+            <div style="font-size: 10px; color: var(--muted-foreground, #aaa); margin-bottom: 8px; line-height: 1.4;">
+              ${t('skillsSummaryText', { count: skills.length, wsCount: wsSkillsCount, globCount: globSkillsCount, builtCount: builtSkillsCount })}
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 5px;">
+              ${skills.map(s => `
+                <span style="font-size: 10px; padding: 2px 6px; border-radius: 4px; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.2); color: #7dd3fc;" title="${s.path}">
+                  ${s.name} <span style="opacity: 0.6; font-size: 8.5px;">(${s.scope === 'builtin' ? t('scopeBuiltin') : (s.scope === 'workspace' ? t('scopeWorkspace') : t('scopeGlobal'))})</span>
+                </span>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- Section 3: Harness Native Tools & Governance Sections -->
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border, rgba(255,255,255,0.08)); border-radius: 8px; padding: 12px;">
+            <div style="font-weight: 600; margin-bottom: 6px; font-size: 12px; display: flex; justify-content: space-between; align-items: center;">
+              <span>${t('sectionNativeTitle')}</span>
+              <span style="font-size: 10px; color: #34d399; font-weight: 600;">~5.5k tokens</span>
+            </div>
+            <div style="font-size: 10px; color: var(--muted-foreground, #aaa); margin-bottom: 8px; line-height: 1.4;">
+              ${t('nativeSummaryText', { toolsCount: nativeTools.length, toolsList: nativeTools.slice(0, 4).join(', ') + '...', sectionsCount: promptSections.length })}
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 5px;">
+              ${promptSections.map(sec => `
+                <span style="font-size: 9.5px; padding: 1px 5px; border-radius: 3px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.25); color: #6ee7b7;">
+                  &lt;${sec}&gt;
+                </span>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- Section 4: MCP Servers -->
+          ${mcps.length > 0 ? `
+            <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border, rgba(255,255,255,0.08)); border-radius: 8px; padding: 12px;">
+              <div style="font-weight: 600; margin-bottom: 6px; font-size: 12px; display: flex; justify-content: space-between; align-items: center;">
+                <span>${t('sectionMcpsTitle')}</span>
+                <span style="font-size: 10px; color: #f59e0b; font-weight: 600;">${mcps.length} servers (${sys.mcpsToolsCount} tools)</span>
+              </div>
+              <div style="font-size: 10px; color: var(--muted-foreground, #aaa); margin-bottom: 8px;">
+                ${t('mcpsSummaryText', { count: mcps.length, toolsCount: sys.mcpsToolsCount })}
+              </div>
+              <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                ${mcps.map(m => `
+                  <div style="padding: 4px 8px; border-radius: 4px; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.2); font-size: 10.5px; display: flex; align-items: center; gap: 6px;">
+                    <span style="font-weight: 600; color: #fbbf24;">🔌 ${m.name}</span>
+                    <span style="font-size: 9px; opacity: 0.7; color: #fef3c7;">${m.toolsCount} tools</span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          ` : ''}
+
+        </div>
+      `;
 
     } else if (tab === 'costs') {
       const pricing = data.pricing || getModelPricing(data.latestUsage?.model, data.totalTokens);
@@ -2362,7 +2820,8 @@
         </div>
       `;
     } else if (tab === 'files') {
-      if (data.files.length === 0) {
+      const files = data.files || [];
+      if (files.length === 0) {
         container.innerHTML = `<div style="text-align:center; padding: 30px; color: var(--muted-foreground, #888);">${t('noFilesSession')}</div>`;
         return;
       }
@@ -2374,7 +2833,7 @@
             <span style="text-align: right;">${t('colFileTokens')}</span>
             <span style="text-align: right;">${t('colFileReads')}</span>
           </div>
-          ${data.files.map(f => `
+          ${files.map(f => `
             <div class="agy-table-row" style="display: grid; grid-template-columns: 2fr 100px 100px 80px; padding: 6px 8px; border-radius: 6px; font-size: 11px; align-items: center; transition: background 0.1s;">
               <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${f.path}">
                 <span style="font-weight: 600; color: var(--foreground, #fff);">${f.name}</span>
@@ -2388,7 +2847,8 @@
         </div>
       `;
     } else if (tab === 'commands') {
-      if (data.commands.length === 0) {
+      const commands = data.commands || [];
+      if (commands.length === 0) {
         container.innerHTML = `<div style="text-align:center; padding: 30px; color: var(--muted-foreground, #888);">${t('noCommandsSession')}</div>`;
         return;
       }

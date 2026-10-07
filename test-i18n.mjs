@@ -8,7 +8,7 @@ const widgetPath = path.join(path.dirname(new URL(import.meta.url).pathname), 'w
 const widgetSrc = fs.readFileSync(widgetPath, 'utf8');
 
 // 1. Syntax and Version Integrity
-assert(widgetSrc.includes("const VERSION = '1.5.0-i18n-opensource';"), 'widget.js must have VERSION = 1.5.0-i18n-opensource');
+assert(widgetSrc.includes("const VERSION = '1.6.0';"), 'widget.js must have VERSION = 1.6.0');
 assert(widgetSrc.includes('SUPPORTED_LOCALES'), 'widget.js must define SUPPORTED_LOCALES');
 assert(widgetSrc.includes('TRANSLATIONS'), 'widget.js must contain TRANSLATIONS');
 assert(widgetSrc.includes('agy-lang-select'), 'widget.js must contain the language selector agy-lang-select');
