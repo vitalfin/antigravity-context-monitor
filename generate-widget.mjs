@@ -482,10 +482,14 @@ const widgetJsContent = `(() => {
       const inputTokens = latestUsage ? Number(latestUsage.inputTokens || 0) : 0;
       const outputTokens = latestUsage ? Number(latestUsage.outputTokens || 0) : 0;
 
-      // Base system prompt tokens: residual so the four load categories
-      // (system + files + commands + dialogue) partition totalTokens exactly.
-      const attributedTokens = totalFilesTokens + totalCmdTokens + totalUserTokens + totalAssistantTokens;
-      const systemTokensEst = Math.max(0, totalTokens - attributedTokens);
+      // Base system prompt tokens (estimate from first usage snapshot)
+      const systemTokensEst = firstUsage ? Math.max(5000, Number(firstUsage.inputTokens || 0) - totalUserTokens) : 19000;
+
+      // Unattributed context: the gap between the real Active Consumption
+      // total and the sum of the four estimated load categories. Shown as
+      // an explicit "Other / overhead" card so the breakdown reconciles
+      // with the total without inflating the System estimate.
+      const otherTokens = Math.max(0, totalTokens - (systemTokensEst + totalFilesTokens + totalCmdTokens + totalUserTokens + totalAssistantTokens));
 
 
       // Discover workspace directory, active rules, skills, and MCPs
@@ -642,7 +646,8 @@ const widgetJsContent = `(() => {
           system: systemTokensEst,
           files: totalFilesTokens,
           commands: totalCmdTokens,
-          dialogue: totalUserTokens + totalAssistantTokens
+          dialogue: totalUserTokens + totalAssistantTokens,
+          other: otherTokens
         },
         files: filesList,
         commands: commandsSorted,
@@ -1239,7 +1244,7 @@ const widgetJsContent = `(() => {
         if (subDetails) {
           renderModalWithData(subDetails, '🤖 ' + sName);
         } else {
-          renderModalWithData({ cascadeId: val, totalTokens: 1, filesCount: 0, commandsCount: 0, breakdown: { system: 0, files: 0, commands: 0, dialogue: 0 } }, '🤖 ' + sName);
+           renderModalWithData({ cascadeId: val, totalTokens: 1, filesCount: 0, commandsCount: 0, breakdown: { system: 0, files: 0, commands: 0, dialogue: 0, other: 0 } }, '🤖 ' + sName);
           fetchContextDetails(val).then(res => {
             if (res && sessionSelect.value === val) {
               renderModalWithData(res, '🤖 ' + sName);
@@ -1373,7 +1378,7 @@ const widgetJsContent = `(() => {
       mCostSub.title = t('cacheSavingsTooltip', { usd: formatUSD(costs.savedCost) });
     }
 
-    const breakdown = data.breakdown || { system: 0, files: 0, commands: 0, dialogue: 0 };
+    const breakdown = data.breakdown || { system: 0, files: 0, commands: 0, dialogue: 0, other: 0 };
     if (mFiles) mFiles.innerText = t('filesCountUnit', { count: data.filesCount || 0 });
     if (mFilesTokens) mFilesTokens.innerText = t('estTokens', { tokens: formatTokens(breakdown.files) });
 
@@ -1383,12 +1388,13 @@ const widgetJsContent = `(() => {
     if (mRawRatio) mRawRatio.innerText = t('rawRatioText', { tokens: formatTokens(totalTokens), pct: rawPct });
 
     // Load category segment bar normalization
-    const rawSum = (breakdown.system || 0) + (breakdown.files || 0) + (breakdown.commands || 0) + (breakdown.dialogue || 0);
+    const rawSum = (breakdown.system || 0) + (breakdown.files || 0) + (breakdown.commands || 0) + (breakdown.dialogue || 0) + (breakdown.other || 0);
     const normBase = Math.max(totalTokens, rawSum, 1);
     const bSysPct = Math.round(((breakdown.system || 0) / normBase) * 100);
     const bFilesPct = Math.round(((breakdown.files || 0) / normBase) * 100);
     const bCmdsPct = Math.round(((breakdown.commands || 0) / normBase) * 100);
-    const bDiagPct = Math.max(0, 100 - (bSysPct + bFilesPct + bCmdsPct));
+    const bOtherPct = Math.round(((breakdown.other || 0) / normBase) * 100);
+    const bDiagPct = Math.max(0, 100 - (bSysPct + bFilesPct + bCmdsPct + bOtherPct));
 
     if (bSys) bSys.style.width = bSysPct + '%';
     if (bFiles) bFiles.style.width = bFilesPct + '%';
@@ -1512,8 +1518,16 @@ const widgetJsContent = `(() => {
                 <div style="font-size: 10px; color: var(--muted-foreground, #aaa); margin-top: 2px;">\${t('cardCmdsDesc', { count: data.commandsCount || 0 })}</div>
               </div>
               <div style="padding: 8px; background: rgba(16, 185, 129, 0.08); border-radius: 6px; border-left: 3px solid #10b981;">
-                <div style="font-weight: 600; color: #34d399;">\${t('cardDialogueTitle', { tokens: formatTokens(data.breakdown?.dialogue || 0) })}</div>
-                <div style="font-size: 10px; color: var(--muted-foreground, #aaa); margin-top: 2px;">\${t('cardDialogueDesc')}</div>
+                <div>
+                  <div style="font-weight: 600; color: #34d399;">\${t('cardDialogueTitle', { tokens: formatTokens(data.breakdown?.dialogue || 0) })}</div>
+                  <div style="font-size: 10px; color: var(--muted-foreground, #aaa); margin-top: 2px;">\${t('cardDialogueDesc')}</div>
+                </div>
+              </div>
+              <div style="padding: 8px; background: rgba(148, 163, 184, 0.08); border-radius: 6px; border-left: 3px solid #94a3b8;">
+                <div>
+                  <div style="font-weight: 600; color: #94a3b8;">\${t('cardOtherTitle', { tokens: formatTokens(data.breakdown?.other || 0) })}</div>
+                  <div style="font-size: 10px; color: var(--muted-foreground, #aaa); margin-top: 2px;">\${t('cardOtherDesc')}</div>
+                </div>
               </div>
             </div>
           </div>

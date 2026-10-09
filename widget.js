@@ -110,6 +110,8 @@
     "cardCmdsDesc": "{count} bash commands executed and retained in history.",
     "cardDialogueTitle": "💬 Dialogue & Reasoning (~{tokens})",
     "cardDialogueDesc": "User prompts, model replies, and thought chains.",
+    "cardOtherTitle": "🧩 Other / Overhead (~{tokens})",
+    "cardOtherDesc": "Unattributed context: cache metadata, tool schemas, and estimation gap.",
     "topConsumersTitle": "Top Context Consumers",
     "viewAllBtn": "View all ({count})",
     "noFilesYet": "No files read yet.",
@@ -258,6 +260,8 @@
     "cardCmdsDesc": "{count} comandos bash executados e suas saídas mantidas no histórico.",
     "cardDialogueTitle": "💬 Diálogo & Raciocínio (~{tokens})",
     "cardDialogueDesc": "Prompts do usuário, respostas do modelo e cadeias de pensamento.",
+    "cardOtherTitle": "🧩 Outro / Sobrecarga (~{tokens})",
+    "cardOtherDesc": "Contexto não atribuído: metadados de cache, schemas de ferramentas e margem de estimativa.",
     "topConsumersTitle": "Principais Consumidores de Contexto",
     "viewAllBtn": "Ver todos ({count})",
     "noFilesYet": "Nenhum arquivo lido ainda.",
@@ -406,6 +410,8 @@
     "cardCmdsDesc": "{count} comandos bash ejecutados y sus salidas conservadas en el historial.",
     "cardDialogueTitle": "💬 Diálogo y Razonamiento (~{tokens})",
     "cardDialogueDesc": "Prompts de usuario, respuestas del modelo y cadenas de pensamiento.",
+    "cardOtherTitle": "🧩 Otro / Sobrecarga (~{tokens})",
+    "cardOtherDesc": "Contexto no atribuido: metadatos de caché, esquemas de herramientas y margen de estimación.",
     "topConsumersTitle": "Principales Consumidores de Contexto",
     "viewAllBtn": "Ver todos ({count})",
     "noFilesYet": "Aún no se han leído archivos.",
@@ -554,6 +560,8 @@
     "cardCmdsDesc": "実行され履歴に保持されている {count} 回のbashコマンド出力。",
     "cardDialogueTitle": "💬 対話＆推論 (~{tokens})",
     "cardDialogueDesc": "ユーザープロンプト、モデル応答、および思考プロセス。",
+    "cardOtherTitle": "🧩 その他 / オーバーヘッド (~{tokens})",
+    "cardOtherDesc": "未帰属コンテキスト: キャッシュメタデータ、ツールスキーマ、推定誤差。",
     "topConsumersTitle": "コンテキストの主な消費項目",
     "viewAllBtn": "すべて表示 ({count})",
     "noFilesYet": "まだ読み込まれたファイルはありません。",
@@ -702,6 +710,8 @@
     "cardCmdsDesc": "执行并在历史中保留输出的 {count} 个 bash 命令。",
     "cardDialogueTitle": "💬 对话与思考 (~{tokens})",
     "cardDialogueDesc": "用户输入、模型回答以及内部思考链条。",
+    "cardOtherTitle": "🧩 其他 / 开销 (~{tokens})",
+    "cardOtherDesc": "未归属上下文：缓存元数据、工具模式定义及估算误差。",
     "topConsumersTitle": "主要上下文消耗来源",
     "viewAllBtn": "查看全部 ({count})",
     "noFilesYet": "尚未读取任何文件。",
@@ -850,6 +860,8 @@
     "cardCmdsDesc": "{count} commandes bash exécutées et leurs sorties conservées dans l'historique.",
     "cardDialogueTitle": "💬 Dialogue & Raisonnement (~{tokens})",
     "cardDialogueDesc": "Invites utilisateur, réponses du modèle et chaînes de pensée.",
+    "cardOtherTitle": "🧩 Autre / Surcharge (~{tokens})",
+    "cardOtherDesc": "Contexte non attribué : métadonnées de cache, schémas d'outils et marge d'estimation.",
     "topConsumersTitle": "Principaux Consommateurs de Contexte",
     "viewAllBtn": "Voir tous ({count})",
     "noFilesYet": "Aucun fichier lu pour l'instant.",
@@ -998,6 +1010,8 @@
     "cardCmdsDesc": "{count} Bash-Befehle ausgeführt und im Verlauf aufbewahrt.",
     "cardDialogueTitle": "💬 Dialog & Argumentation (~{tokens})",
     "cardDialogueDesc": "Benutzerprompts, Modellantworten und Gedankengänge.",
+    "cardOtherTitle": "🧩 Sonstiges / Overhead (~{tokens})",
+    "cardOtherDesc": "Nicht zugeordneter Kontext: Cache-Metadaten, Tool-Schemas und Schätzungsabweichung.",
     "topConsumersTitle": "Größte Kontextverbraucher",
     "viewAllBtn": "Alle anzeigen ({count})",
     "noFilesYet": "Noch keine Dateien gelesen.",
@@ -1515,10 +1529,14 @@
       const inputTokens = latestUsage ? Number(latestUsage.inputTokens || 0) : 0;
       const outputTokens = latestUsage ? Number(latestUsage.outputTokens || 0) : 0;
 
-      // Base system prompt tokens: residual so the four load categories
-      // (system + files + commands + dialogue) partition totalTokens exactly.
-      const attributedTokens = totalFilesTokens + totalCmdTokens + totalUserTokens + totalAssistantTokens;
-      const systemTokensEst = Math.max(0, totalTokens - attributedTokens);
+      // Base system prompt tokens (estimate from first usage snapshot)
+      const systemTokensEst = firstUsage ? Math.max(5000, Number(firstUsage.inputTokens || 0) - totalUserTokens) : 19000;
+
+      // Unattributed context: the gap between the real Active Consumption
+      // total and the sum of the four estimated load categories. Shown as
+      // an explicit "Other / overhead" card so the breakdown reconciles
+      // with the total without inflating the System estimate.
+      const otherTokens = Math.max(0, totalTokens - (systemTokensEst + totalFilesTokens + totalCmdTokens + totalUserTokens + totalAssistantTokens));
 
 
       // Discover workspace directory, active rules, skills, and MCPs
@@ -1675,7 +1693,8 @@
           system: systemTokensEst,
           files: totalFilesTokens,
           commands: totalCmdTokens,
-          dialogue: totalUserTokens + totalAssistantTokens
+          dialogue: totalUserTokens + totalAssistantTokens,
+          other: otherTokens
         },
         files: filesList,
         commands: commandsSorted,
@@ -2272,7 +2291,7 @@
         if (subDetails) {
           renderModalWithData(subDetails, '🤖 ' + sName);
         } else {
-          renderModalWithData({ cascadeId: val, totalTokens: 1, filesCount: 0, commandsCount: 0, breakdown: { system: 0, files: 0, commands: 0, dialogue: 0 } }, '🤖 ' + sName);
+           renderModalWithData({ cascadeId: val, totalTokens: 1, filesCount: 0, commandsCount: 0, breakdown: { system: 0, files: 0, commands: 0, dialogue: 0, other: 0 } }, '🤖 ' + sName);
           fetchContextDetails(val).then(res => {
             if (res && sessionSelect.value === val) {
               renderModalWithData(res, '🤖 ' + sName);
@@ -2406,7 +2425,7 @@
       mCostSub.title = t('cacheSavingsTooltip', { usd: formatUSD(costs.savedCost) });
     }
 
-    const breakdown = data.breakdown || { system: 0, files: 0, commands: 0, dialogue: 0 };
+    const breakdown = data.breakdown || { system: 0, files: 0, commands: 0, dialogue: 0, other: 0 };
     if (mFiles) mFiles.innerText = t('filesCountUnit', { count: data.filesCount || 0 });
     if (mFilesTokens) mFilesTokens.innerText = t('estTokens', { tokens: formatTokens(breakdown.files) });
 
@@ -2416,12 +2435,13 @@
     if (mRawRatio) mRawRatio.innerText = t('rawRatioText', { tokens: formatTokens(totalTokens), pct: rawPct });
 
     // Load category segment bar normalization
-    const rawSum = (breakdown.system || 0) + (breakdown.files || 0) + (breakdown.commands || 0) + (breakdown.dialogue || 0);
+    const rawSum = (breakdown.system || 0) + (breakdown.files || 0) + (breakdown.commands || 0) + (breakdown.dialogue || 0) + (breakdown.other || 0);
     const normBase = Math.max(totalTokens, rawSum, 1);
     const bSysPct = Math.round(((breakdown.system || 0) / normBase) * 100);
     const bFilesPct = Math.round(((breakdown.files || 0) / normBase) * 100);
     const bCmdsPct = Math.round(((breakdown.commands || 0) / normBase) * 100);
-    const bDiagPct = Math.max(0, 100 - (bSysPct + bFilesPct + bCmdsPct));
+    const bOtherPct = Math.round(((breakdown.other || 0) / normBase) * 100);
+    const bDiagPct = Math.max(0, 100 - (bSysPct + bFilesPct + bCmdsPct + bOtherPct));
 
     if (bSys) bSys.style.width = bSysPct + '%';
     if (bFiles) bFiles.style.width = bFilesPct + '%';
@@ -2545,8 +2565,16 @@
                 <div style="font-size: 10px; color: var(--muted-foreground, #aaa); margin-top: 2px;">${t('cardCmdsDesc', { count: data.commandsCount || 0 })}</div>
               </div>
               <div style="padding: 8px; background: rgba(16, 185, 129, 0.08); border-radius: 6px; border-left: 3px solid #10b981;">
-                <div style="font-weight: 600; color: #34d399;">${t('cardDialogueTitle', { tokens: formatTokens(data.breakdown?.dialogue || 0) })}</div>
-                <div style="font-size: 10px; color: var(--muted-foreground, #aaa); margin-top: 2px;">${t('cardDialogueDesc')}</div>
+                <div>
+                  <div style="font-weight: 600; color: #34d399;">${t('cardDialogueTitle', { tokens: formatTokens(data.breakdown?.dialogue || 0) })}</div>
+                  <div style="font-size: 10px; color: var(--muted-foreground, #aaa); margin-top: 2px;">${t('cardDialogueDesc')}</div>
+                </div>
+              </div>
+              <div style="padding: 8px; background: rgba(148, 163, 184, 0.08); border-radius: 6px; border-left: 3px solid #94a3b8;">
+                <div>
+                  <div style="font-weight: 600; color: #94a3b8;">${t('cardOtherTitle', { tokens: formatTokens(data.breakdown?.other || 0) })}</div>
+                  <div style="font-size: 10px; color: var(--muted-foreground, #aaa); margin-top: 2px;">${t('cardOtherDesc')}</div>
+                </div>
               </div>
             </div>
           </div>
