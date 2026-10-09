@@ -1,6 +1,6 @@
 {
   "name": "@vitalfin/antigravity-context-monitor",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "Autonomous real-time context window monitor, subagent inspector, cost estimator & memory guard for Google Antigravity.",
   "main": "widget.js",
   "type": "module",

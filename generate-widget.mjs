@@ -7,7 +7,7 @@ const widgetJsContent = `(() => {
   const BREADCRUMB_WIDGET_ID = 'agy-breadcrumb-context-widget';
   const MODAL_ID = 'agy-context-inspector-modal';
   const POPOVER_ID = 'agy-zone-popover';
-  const VERSION = '1.6.0';
+  const VERSION = '1.6.1';
 
   if (window.__agyWidgetVersion === VERSION && (document.getElementById(WIDGET_ID) || document.getElementById(BREADCRUMB_WIDGET_ID))) {
     return;
@@ -2220,4 +2220,4 @@ const widgetJsContent = `(() => {
 `;
 
 fs.writeFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), 'widget.js'), widgetJsContent, 'utf8');
-console.log('✅ widget.js v1.6.0 generated successfully!');
+console.log('✅ widget.js v1.6.1 generated successfully!');

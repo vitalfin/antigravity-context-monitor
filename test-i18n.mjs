@@ -2,20 +2,20 @@ import assert from 'assert';
 import fs from 'fs';
 import path from 'path';
 
-console.log('🧪 Starting Internationalization (i18n) and Sponsor Unit Tests (v1.6.0)...');
+console.log('🧪 Starting Internationalization (i18n) and Sponsor Unit Tests (v1.6.1)...');
 
 const widgetPath = path.join(path.dirname(new URL(import.meta.url).pathname), 'widget.js');
 const widgetSrc = fs.readFileSync(widgetPath, 'utf8');
 
 // 1. Syntax and Version Integrity
-assert(widgetSrc.includes("const VERSION = '1.6.0';"), 'widget.js must have VERSION = 1.6.0');
+assert(widgetSrc.includes("const VERSION = '1.6.1';"), 'widget.js must have VERSION = 1.6.1');
 assert(widgetSrc.includes('SUPPORTED_LOCALES'), 'widget.js must define SUPPORTED_LOCALES');
 assert(widgetSrc.includes('TRANSLATIONS'), 'widget.js must contain TRANSLATIONS');
 assert(widgetSrc.includes('agy-lang-select'), 'widget.js must contain the language selector agy-lang-select');
 assert(widgetSrc.includes('agy-modal-sponsor'), 'widget.js must contain the sponsor button agy-modal-sponsor');
 assert(widgetSrc.includes('https://github.com/sponsors/vitalfin'), 'widget.js must point to the GitHub sponsor link');
 
-console.log('  ✓ Test 1 passed: Syntax and structural elements for v1.6.0 present.');
+console.log('  ✓ Test 1 passed: Syntax and structural elements for v1.6.1 present.');
 
 // 2. Extract translations from widget.js for exhaustive symmetry testing
 const matchTranslations = widgetSrc.match(/const TRANSLATIONS = ({[\s\S]*?\n  };)/);
@@ -108,7 +108,7 @@ console.log('  ✓ Test 6 passed: scopeContextWindow, optMainConversation, and l
 assert(widgetSrc.includes('function isScopeSubagent'), 'widget.js must implement helper function isScopeSubagent');
 console.log('  ✓ Test 7 passed: isScopeSubagent structurally present.');
 
-// 8. v1.6.0 Rules & System Inspector Translations and Interpolation
+// 8. v1.6.1 Rules & System Inspector Translations and Interpolation
 assert.strictEqual(TRANSLATIONS.pt.modalTitle, 'Inspetor de Janela de Contexto', 'modalTitle in PT must be Inspetor de Janela de Contexto');
 assert.strictEqual(TRANSLATIONS.es.modalTitle, 'Inspector de Ventana de Contexto');
 assert.strictEqual(TRANSLATIONS.en.modalTitle, 'Context Window Inspector');
@@ -132,6 +132,6 @@ for (const loc of expectedLocales) {
   const sysBannerText = formatMessage(loc, 'systemBannerDesc', { tokens: '14.5k' });
   assert(!sysBannerText.includes('{') && !sysBannerText.includes('}'), `systemBannerDesc in ${loc} failed interpolation: ${sysBannerText}`);
 }
-console.log('  ✓ Test 8 passed: v1.6.0 Rules & System Inspector translations and dynamic interpolations validated across all 7 languages.');
+console.log('  ✓ Test 8 passed: v1.6.1 Rules & System Inspector translations and dynamic interpolations validated across all 7 languages.');
 
 console.log('\n🎉 ALL i18n UNIT TESTS PASSED WITH 100% SUCCESS!\n');
