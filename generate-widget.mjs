@@ -482,8 +482,10 @@ const widgetJsContent = `(() => {
       const inputTokens = latestUsage ? Number(latestUsage.inputTokens || 0) : 0;
       const outputTokens = latestUsage ? Number(latestUsage.outputTokens || 0) : 0;
 
-      // Base system prompt tokens
-      const systemTokensEst = firstUsage ? Math.max(5000, Number(firstUsage.inputTokens || 0) - totalUserTokens) : 19000;
+      // Base system prompt tokens: residual so the four load categories
+      // (system + files + commands + dialogue) partition totalTokens exactly.
+      const attributedTokens = totalFilesTokens + totalCmdTokens + totalUserTokens + totalAssistantTokens;
+      const systemTokensEst = Math.max(0, totalTokens - attributedTokens);
 
 
       // Discover workspace directory, active rules, skills, and MCPs
