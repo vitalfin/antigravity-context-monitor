@@ -41,9 +41,41 @@ While modern LLMs accept 1M+ tokens, fine-grained reasoning and needle-in-a-hays
 
 ### Prerequisites
 - Node.js >= 22.0.0
-- Google Antigravity IDE running on Linux, macOS, or Windows
+- Google Antigravity IDE running on Linux, macOS, or Windows with **Chrome DevTools Protocol (CDP) remote debugging enabled** (`--remote-debugging-port=0`)
 
-### 1. Clone & Run
+### 1. Enable CDP Remote Debugging in Antigravity
+
+The monitor attaches to Antigravity by reading its `DevToolsActivePort` file. Newer Antigravity builds may launch without remote debugging enabled by default, or an IDE update may reset the system launcher.
+
+Launch Antigravity with `--remote-debugging-port=0` (Electron automatically picks a free port and writes `DevToolsActivePort`):
+
+- **Linux (persistent desktop entry override — survives IDE updates):**
+  Create `~/.local/share/applications/antigravity.desktop`:
+  ```ini
+  [Desktop Entry]
+  Name=Antigravity
+  Exec=/opt/Antigravity-x64/antigravity --remote-debugging-port=0 %F
+  Icon=/usr/share/pixmaps/antigravity.png
+  Type=Application
+  Categories=Development;IDE;
+  StartupNotify=true
+  ```
+  Then refresh the desktop database (`update-desktop-database ~/.local/share/applications`) and fully restart Antigravity.
+
+- **macOS (terminal):**
+  ```bash
+  open -a "Antigravity" --args --remote-debugging-port=0
+  ```
+
+- **Windows (shortcut / PowerShell):**
+  Add `--remote-debugging-port=0` to the Target field of your Antigravity shortcut, or run:
+  ```powershell
+  & "$env:LOCALAPPDATA\Programs\Antigravity\Antigravity.exe" --remote-debugging-port=0
+  ```
+
+> **Troubleshooting:** If the widget does not appear after an Antigravity update, verify that `DevToolsActivePort` exists in `~/.config/Antigravity/` (Linux), `~/Library/Application Support/Antigravity/` (macOS), or `%APPDATA%\Antigravity\` (Windows). If it is missing, fully quit Antigravity and relaunch it with `--remote-debugging-port=0`.
+
+### 2. Clone & Run
 
 ```bash
 git clone https://github.com/vitalfin/antigravity-context-monitor.git
@@ -53,7 +85,7 @@ npm start
 
 The daemon automatically detects Antigravity's active CDP port across Linux (`~/.config/Antigravity/DevToolsActivePort`), macOS (`~/Library/Application Support/Antigravity/DevToolsActivePort`), and Windows (`%APPDATA%\Antigravity\DevToolsActivePort`), and injects the monitor in real time.
 
-### 2. Optional: Run as Linux Background Service (systemd)
+### 3. Optional: Run as Linux Background Service (systemd)
 
 To keep the monitor running automatically in the background on Linux:
 
